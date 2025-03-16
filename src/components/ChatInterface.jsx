@@ -13,13 +13,20 @@ export const ChatInterface = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call - Replace with actual API integration
-      const response = await new Promise((resolve) => 
-        setTimeout(() => resolve({ data: { response: "This is a simulated response. Replace with actual API integration." }}), 1000)
-      );
-      addMessage(response.data.response, 'bot');
+      const response = await fetch('http://localhost:8000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: content }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch response');
+      }
+      
+      const data = await response.json();
+      addMessage(data.response, 'bot');
     } catch (error) {
-      addMessage("Sorry, I'm having trouble connecting to the server. Please try again later.", 'bot');
+      addMessage("Error: Unable to connect to server.", 'bot');
     } finally {
       setIsLoading(false);
     }
