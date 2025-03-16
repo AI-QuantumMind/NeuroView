@@ -16,6 +16,7 @@
     "@radix-ui/react-tooltip": "^1.0.7",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
+    "framer-motion": "^12.5.0",
     "i": "^0.3.7",
     "lucide-react": "^0.344.0",
     "nifti-reader-js": "^0.5.4",

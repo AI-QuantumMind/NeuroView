@@ -27,15 +27,22 @@ export function Login({ onLogin }) {
         throw new Error(data.message || "Login failed");
       }
 
-      // Store token securely (consider sessionStorage for better security)
+      // Store token and role securely
       localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.role); // Store role in localStorage
+
+      // Call onLogin to update the user state in App
+      onLogin({ token: data.token, role: data.role });
 
       // Redirect based on role
-      // const isDoctor = email.startsWith("dr.");
-      onLogin({ token: data.token });
-
-      navigate("/mri-dashboard");
+      toast.success(`Successfully logged In as ${data.role}`);
+      if (data.role === "doctor") {
+        navigate("/mri-dashboard");
+      } else if (data.role === "patient") {
+        navigate("/patient-dashboard");
+      }
     } catch (err) {
+      // toast.error(`${err.message}`);
       setError(err.message);
     }
   };

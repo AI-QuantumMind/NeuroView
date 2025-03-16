@@ -12,13 +12,17 @@ import AboutUs from "./AboutUs";
 import ChatInterface from "./AIChat";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import PatientsDashboard from "./pages/patientsDashboard";
 
 function App() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (token) setUser({ token });
+    const role = localStorage.getItem("role"); // Get role from localStorage
+    if (token && role) {
+      setUser({ token, role }); // Set user with token and role
+    }
   }, []);
 
   return (
@@ -29,7 +33,13 @@ function App() {
             path="/signup"
             element={
               user ? (
-                <Navigate to="/mri-dashboard" />
+                <Navigate
+                  to={
+                    user.role === "doctor"
+                      ? "/mri-dashboard"
+                      : "/patient-dashboard"
+                  }
+                />
               ) : (
                 <Signup onSignup={setUser} />
               )
@@ -39,7 +49,13 @@ function App() {
             path="/login"
             element={
               user ? (
-                <Navigate to="/mri-dashboard" />
+                <Navigate
+                  to={
+                    user.role === "doctor"
+                      ? "/mri-dashboard"
+                      : "/patient-dashboard"
+                  }
+                />
               ) : (
                 <Login onLogin={setUser} />
               )
@@ -48,9 +64,19 @@ function App() {
 
           {user ? (
             <>
-              <Route path="/mri-dashboard" element={<MRIDashboard />} />
-              <Route path="/about" element={<AboutUs />} />
-              <Route path="/chat" element={<ChatInterface />} />
+              {user.role === "doctor" && (
+                <>
+                  <Route path="/mri-dashboard" element={<MRIDashboard />} />
+                  <Route path="/about" element={<AboutUs />} />
+                  <Route path="/chat" element={<ChatInterface />} />
+                </>
+              )}
+              {user.role === "patient" && (
+                <Route
+                  path="/patient-dashboard"
+                  element={<PatientsDashboard />}
+                />
+              )}
             </>
           ) : (
             <Route path="*" element={<Navigate to="/login" />} />

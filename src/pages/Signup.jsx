@@ -23,8 +23,6 @@ export function Signup({ onSignup }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Form submitted");
-
     setError("");
 
     // Filter data based on selected role
@@ -55,20 +53,31 @@ export function Signup({ onSignup }) {
       setError("Passwords do not match");
       return;
     }
-    console.log("Body:", filteredData);
+
     try {
       const response = await fetch("http://localhost:5000/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(filteredData), // ✅ Send filtered data only
+        body: JSON.stringify(filteredData),
       });
 
       const data = await response.json();
       if (response.ok) {
-        toast.success("Signup successful! Redirecting...");
-        navigate("/mri-dashboard");
+        // Store token and role securely
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.role); // Store role in localStorage
+
+        // Show success message
+        toast.success("Account created successfully!");
+
+        // Redirect based on role
+        if (data.role === "doctor") {
+          navigate("/mri-dashboard");
+        } else if (data.role === "patient") {
+          navigate("/patient-dashboard");
+        }
       } else {
-        setError(data.error || "Signup failed");
+        setError(data.message || "Signup failed");
       }
     } catch (err) {
       setError("Server error or invalid data provided");

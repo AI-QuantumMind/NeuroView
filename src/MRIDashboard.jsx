@@ -4,7 +4,7 @@ import { Niivue } from "@niivue/niivue";
 import { Moon, Sun } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Brain } from "lucide-react";
-import AboutUs from "./AboutUs";
+import Navbar from "./components/Navbar";
 
 function MRIDasboard() {
   const mriCanvasRef = useRef(null);
@@ -170,65 +170,7 @@ function MRIDasboard() {
   return (
     <div className={`flex flex-col min-h-screen ${containerClasses}`}>
       {/* Top Navigation Bar */}
-      <nav
-        className={`w-full flex items-center justify-between ${
-          isDark ? "bg-gray-800 text-gray-300" : "bg-white text-gray-800"
-        } px-6 py-3 shadow-lg`}
-      >
-        <div className="flex items-center space-x-2">
-          <Brain className="w-6 h-6 text-blue-500" />
-          <span className="text-xl font-bold">NeuroView</span>
-        </div>
-        <div className="flex items-center space-x-4">
-          {/* Dark Mode Toggle Button */}
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className={`flex items-center justify-center p-2 rounded-lg transition-all duration-300 ${
-              isDark
-                ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200 hover:text-gray-900"
-            } shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              isDark ? "focus:ring-gray-500" : "focus:ring-gray-400"
-            }`}
-            aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5" />
-            ) : (
-              <Moon className="w-5 h-5" />
-            )}
-            {/* <span className="ml-2 text-sm font-medium">
-              {isDark ? "Light Mode" : "Dark Mode"}
-            </span> */}
-          </button>
-
-          {/* About Link */}
-
-          <Link
-            to="/about" // Use "to" instead of "href"
-            className={`text-sm ${
-              isDark
-                ? "text-gray-300 hover:text-white"
-                : "text-gray-800 hover:text-gray-900"
-            }`}
-          >
-            About
-          </Link>
-          <button
-            onClick={() => {
-              localStorage.removeItem("token"); // Clear the token
-              window.location.href = "/login"; // Redirect to login page
-            }}
-            className={`text-sm ${
-              isDark
-                ? "text-gray-300 hover:text-white"
-                : "text-gray-800 hover:text-gray-900"
-            }`}
-          >
-            Sign Out
-          </button>
-        </div>
-      </nav>
+      <Navbar isDark={isDark} setIsDark={setIsDark} />
 
       {/* Main Content */}
       <div className="flex flex-1">

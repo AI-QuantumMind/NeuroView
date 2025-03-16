@@ -21,6 +21,19 @@ app.use("/api/patients", patientRoutes); // Added Patient Routes
 app.use("/api/doctors", doctorRoutes); // Added Doctor Routes
 
 // Start server
-app.listen(PORT, () =>
-  console.log(`Server running on http://localhost:${PORT}`)
-);
+const startServer = (port) => {
+  const server = app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+  });
+
+  server.on("error", (err) => {
+    if (err.code === "EADDRINUSE") {
+      console.log(`Port ${port} is in use, trying another port...`);
+      startServer(port + 1); // Try the next port
+    } else {
+      console.error("Server error:", err);
+    }
+  });
+};
+
+startServer(PORT);
