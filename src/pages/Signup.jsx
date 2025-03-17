@@ -77,6 +77,7 @@ export function Signup({ onSignup }) {
           navigate("/patient-dashboard");
         }
       } else {
+        toast.error(data.message);
         setError(data.message || "Signup failed");
       }
     } catch (err) {
