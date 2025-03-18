@@ -11,6 +11,7 @@ from passlib.context import CryptContext
 import jwt
 from bson import ObjectId
 from fastapi.middleware.cors import CORSMiddleware
+from RAG.app import route_rag
 
 # -----------------------
 # Load environment variables
@@ -242,6 +243,11 @@ async def signin(data: SigninModel):
         raise HTTPException(status_code=400, detail="Invalid credentials")
     token = create_access_token({"id": str(user["_id"]), "role": role})
     return {"message": f"Login successful as {role}", "token": token, "role": role}
+
+# -----------------------
+# Include the RAG routes
+# -----------------------
+app.include_router(route_rag)
 
 # -----------------------
 # Run the application
