@@ -2,17 +2,20 @@ import React, { useState } from "react";
 import { Brain, Mail, Lock } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
+import Loader from "../components/loader";
 
 export function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const response = await fetch("http://localhost:8000/signin", {
@@ -27,23 +30,23 @@ export function Login({ onLogin }) {
         throw new Error(data.message || "Login failed");
       }
 
-      // Store token and role securely
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role); // Store role in localStorage
+      localStorage.setItem("role", data.role);
+      // console.log(data);
+      localStorage.setItem("userId", data.id);
 
-      // Call onLogin to update the user state in App
       onLogin({ token: data.token, role: data.role });
-
-      // Redirect based on role
       toast.success(`Successfully logged In as ${data.role}`);
+
       if (data.role === "doctor") {
         navigate("/mri-dashboard");
       } else if (data.role === "patient") {
         navigate("/patient-dashboard");
       }
     } catch (err) {
-      // toast.error(`${err.message}`);
       setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -117,8 +120,9 @@ export function Login({ onLogin }) {
           <button
             type="submit"
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            disabled={loading}
           >
-            Sign in
+            {loading ? <Loader /> : "Sign in"}
           </button>
         </form>
 

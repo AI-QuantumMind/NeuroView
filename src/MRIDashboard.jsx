@@ -20,6 +20,7 @@ function MRIDasboard() {
 
   // Toggle for light/dark theme
   const [isDark, setIsDark] = useState(false);
+  const role = localStorage.getItem("role");
 
   // Example AI models
   const AI_MODELS = [
@@ -170,7 +171,12 @@ function MRIDasboard() {
   return (
     <div className={`flex flex-col min-h-screen ${containerClasses}`}>
       {/* Top Navigation Bar */}
-      <Navbar isDark={isDark} setIsDark={setIsDark} />
+      <Navbar
+        isDark={isDark}
+        setIsDark={setIsDark}
+        dashboardType="mri"
+        role={role}
+      />
 
       {/* Main Content */}
       <div className="flex flex-1">
