@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from passlib.context import CryptContext
 import jwt
 from bson import ObjectId
+from VisionModel.ai_model import router as ai_router
 from fastapi.middleware.cors import CORSMiddleware
 from RAG.app import route_rag
 
@@ -244,6 +245,7 @@ async def signin(data: SigninModel):
     token = create_access_token({"id": str(user["_id"]), "role": role})
     return {"message": f"Login successful as {role}", "token": token, "role": role}
 
+app.include_router(ai_router, prefix="/ai")
 # -----------------------
 # Include the RAG routes
 # -----------------------
