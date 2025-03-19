@@ -221,9 +221,11 @@ async def signup(data: SignupModel):
         user_data.setdefault("medical_records", [])
     result = await collection.insert_one(user_data)
     user = await collection.find_one({"_id": result.inserted_id})
-    user["_id"] = str(user["_id"])
-    token = create_access_token({"id": user["_id"], "role": role})
-    return {"message": f"Signup successful as {role}", "token": token, "role": role}
+    
+    user_id = str(user["_id"])
+    token = create_access_token({"id":user_id, "role": role})
+    
+    return {"message": f"Signup successful as {role}", "token": token, "role": role,"id":user_id}
 
 # Signin endpoint
 @app.post("/signin")
@@ -242,8 +244,10 @@ async def signin(data: SigninModel):
         raise HTTPException(status_code=403, detail="Access denied. Expected role: patient")
     if not verify_password(data.password, user["password"]):
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    token = create_access_token({"id": str(user["_id"]), "role": role})
-    return {"message": f"Login successful as {role}", "token": token, "role": role}
+    user_id = str(user["_id"])
+    token = create_access_token({"id":user_id, "role": role})
+    
+    return {"message": f"Login successful as {role}", "token": token, "role": role,"id":user_id}
 
 app.include_router(ai_router, prefix="/ai")
 # -----------------------

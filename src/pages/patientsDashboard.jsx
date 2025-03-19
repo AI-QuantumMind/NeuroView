@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Brain, Moon, Sun, FileText, User, Calendar } from "lucide-react";
+import Navbar from "../components/Navbar";
 
 function PatientsDashboard() {
   const [isDark, setIsDark] = useState(false);
+  const role = localStorage.getItem("role");
 
   // Example report data
   const reports = [
@@ -38,93 +40,53 @@ function PatientsDashboard() {
   const tileClasses = isDark
     ? "bg-gray-800 text-gray-100 hover:bg-gray-700"
     : "bg-white text-gray-800 hover:bg-gray-50";
+  const reportButtonClasses = isDark
+    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+    : "bg-indigo-500 text-white hover:bg-indigo-600";
 
   return (
     <div className={`min-h-screen ${containerClasses}`}>
       {/* Navigation Bar */}
-      <nav
-        className={`w-full flex items-center justify-between ${
-          isDark ? "bg-gray-800 text-gray-300" : "bg-white text-gray-800"
-        } px-6 py-3 shadow-lg`}
-      >
-        <div className="flex items-center space-x-2">
-          <Link to="/mri-dashboard" className="flex items-center space-x-2">
-            <Brain className="w-6 h-6 text-blue-500" />
-            <span className="text-xl font-bold">NeuroView</span>
-          </Link>
-        </div>
-        <div className="flex items-center space-x-4">
-          {/* Dark Mode Toggle Button */}
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className={`flex items-center justify-center p-2 rounded-lg transition-all duration-300 ${
-              isDark
-                ? "bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200 hover:text-gray-900"
-            } shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-              isDark ? "focus:ring-gray-500" : "focus:ring-gray-400"
-            }`}
-            aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {isDark ? (
-              <Sun className="w-5 h-5" />
-            ) : (
-              <Moon className="w-5 h-5" />
-            )}
-            <span className="ml-2 text-sm font-medium">
-              {isDark ? "Light Mode" : "Dark Mode"}
-            </span>
-          </button>
-
-          {/* Sign Out Button */}
-          <button
-            onClick={() => {
-              localStorage.removeItem("token");
-              window.location.href = "/login";
-            }}
-            className={`text-sm ${
-              isDark
-                ? "text-gray-300 hover:text-white"
-                : "text-gray-800 hover:text-gray-900"
-            }`}
-          >
-            Sign Out
-          </button>
-        </div>
-      </nav>
+      <Navbar
+        isDark={isDark}
+        setIsDark={setIsDark}
+        dashboardType="patient"
+        role={role}
+      />
 
       {/* Main Content */}
       <div className="p-6">
-        <h1 className="text-3xl font-bold mb-6">Patient Reports</h1>
+        <h1 className="text-3xl font-bold mb-6 text-indigo-600">
+          Patient Reports
+        </h1>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {reports.map((report) => (
             <div
               key={report.id}
-              className={`${tileClasses} p-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl`}
+              className={`${tileClasses} p-6 rounded-lg shadow-md transition-all duration-300 hover:shadow-xl`}
             >
               <div className="flex items-center space-x-4 mb-4">
-                <FileText className="w-6 h-6 text-blue-500" />
+                <FileText className="w-6 h-6 text-indigo-600" />
                 <h2 className="text-xl font-semibold">{report.name}</h2>
               </div>
+
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-5 h-5 text-gray-500" />
+                <div className="flex items-center space-x-2 text-gray-400">
+                  <Calendar className="w-5 h-5" />
                   <p className="text-sm">Date: {report.date}</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <User className="w-5 h-5 text-gray-500" />
+                <div className="flex items-center space-x-2 text-gray-400">
+                  <User className="w-5 h-5" />
                   <p className="text-sm">Doctor: {report.doctor}</p>
                 </div>
               </div>
+
               <a
                 href={report.pdfUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`mt-4 inline-block w-full py-2 text-center rounded-lg ${
-                  isDark
-                    ? "bg-blue-600 text-white hover:bg-blue-700"
-                    : "bg-blue-500 text-white hover:bg-blue-600"
-                } transition-all duration-300`}
+                className={`mt-4 inline-block w-full py-2 text-center rounded-lg font-medium ${reportButtonClasses} transition-all duration-300`}
               >
                 View Report
               </a>

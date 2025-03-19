@@ -1,7 +1,8 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
-import PropTypes from 'prop-types';
-import ReactMarkdown from 'react-markdown';
-import { Brain, Sun, Moon, Send, Download, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, createContext, useContext } from "react";
+import PropTypes from "prop-types";
+import ReactMarkdown from "react-markdown";
+import { Brain, Sun, Moon, Send, Download, Trash2 } from "lucide-react";
+import Navbar from "./components/Navbar";
 
 // -----------------------
 // Chat Context and Hook
@@ -29,7 +30,9 @@ export const ChatProvider = ({ children }) => {
   };
 
   return (
-    <ChatContext.Provider value={{ messages, addMessage, clearChat, isLoading, setIsLoading }}>
+    <ChatContext.Provider
+      value={{ messages, addMessage, clearChat, isLoading, setIsLoading }}
+    >
       {children}
     </ChatContext.Provider>
   );
@@ -45,15 +48,15 @@ export const useChat = () => useContext(ChatContext);
 // ChatMessage Component
 // -----------------------
 export const ChatMessage = ({ message }) => {
-  const isBot = message.sender === 'bot';
+  const isBot = message.sender === "bot";
 
   return (
-    <div className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-4`}>
+    <div className={`flex ${isBot ? "justify-start" : "justify-end"} mb-4`}>
       <div
         className={`max-w-[70%] rounded-lg px-4 py-2 ${
           isBot
-            ? 'bg-blue-100 text-blue-900 dark:bg-blue-800 dark:text-blue-100'
-            : 'bg-blue-500 text-white dark:bg-blue-600'
+            ? "bg-blue-100 text-blue-900 dark:bg-blue-800 dark:text-blue-100"
+            : "bg-blue-500 text-white dark:bg-blue-600"
         }`}
       >
         {isBot ? (
@@ -76,7 +79,7 @@ ChatMessage.propTypes = {
   message: PropTypes.shape({
     id: PropTypes.string.isRequired,
     content: PropTypes.string.isRequired,
-    sender: PropTypes.oneOf(['user', 'bot']).isRequired,
+    sender: PropTypes.oneOf(["user", "bot"]).isRequired,
     timestamp: PropTypes.instanceOf(Date).isRequired,
   }).isRequired,
 };
@@ -85,17 +88,17 @@ ChatMessage.propTypes = {
 // ChatInput Component
 // -----------------------
 export const ChatInput = ({ onSendMessage, disabled }) => {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
 
   const handleSend = () => {
     if (message.trim()) {
       onSendMessage(message.trim());
-      setMessage('');
+      setMessage("");
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -136,9 +139,18 @@ export const LoadingIndicator = () => {
     <div className="flex justify-start mb-4">
       <div className="bg-blue-100 dark:bg-blue-800 rounded-lg px-4 py-2">
         <div className="flex space-x-2">
-          <div className="w-2 h-2 bg-blue-500 dark:bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }} />
-          <div className="w-2 h-2 bg-blue-500 dark:bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-          <div className="w-2 h-2 bg-blue-500 dark:bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
+          <div
+            className="w-2 h-2 bg-blue-500 dark:bg-blue-600 rounded-full animate-bounce"
+            style={{ animationDelay: "0s" }}
+          />
+          <div
+            className="w-2 h-2 bg-blue-500 dark:bg-blue-600 rounded-full animate-bounce"
+            style={{ animationDelay: "0.2s" }}
+          />
+          <div
+            className="w-2 h-2 bg-blue-500 dark:bg-blue-600 rounded-full animate-bounce"
+            style={{ animationDelay: "0.4s" }}
+          />
         </div>
       </div>
     </div>
@@ -149,28 +161,29 @@ export const LoadingIndicator = () => {
 // ChatInterface Component
 // -----------------------
 export const ChatInterface = () => {
-  const { messages, addMessage, clearChat, isLoading, setIsLoading } = useChat();
+  const { messages, addMessage, clearChat, isLoading, setIsLoading } =
+    useChat();
 
   const handleSendMessage = async (content) => {
-    addMessage(content, 'user');
+    addMessage(content, "user");
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8000/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: content }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to fetch response');
+        throw new Error("Failed to fetch response");
       }
 
       const data = await response.json();
       // Render response as markdown for bot messages
-      addMessage(data.response, 'bot');
+      addMessage(data.response, "bot");
     } catch (error) {
-      addMessage("Error: Unable to connect to server.", 'bot');
+      addMessage("Error: Unable to connect to server.", "bot");
     } finally {
       setIsLoading(false);
     }
@@ -180,14 +193,16 @@ export const ChatInterface = () => {
     const chatContent = messages
       .map(
         (msg) =>
-          `${msg.sender.toUpperCase()} (${new Date(msg.timestamp).toLocaleString()}): ${msg.content}`
+          `${msg.sender.toUpperCase()} (${new Date(
+            msg.timestamp
+          ).toLocaleString()}): ${msg.content}`
       )
-      .join('\n\n');
-    const blob = new Blob([chatContent], { type: 'text/plain' });
+      .join("\n\n");
+    const blob = new Blob([chatContent], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `chat-export-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `chat-export-${new Date().toISOString().split("T")[0]}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -198,7 +213,9 @@ export const ChatInterface = () => {
     <div className="rounded-lg shadow-lg overflow-hidden">
       {/* Chat Header */}
       <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-100">Chat Session</h2>
+        <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-100">
+          Chat Session
+        </h2>
         <div className="flex space-x-2">
           <button
             onClick={exportChat}
@@ -237,44 +254,34 @@ export const ChatInterface = () => {
 const AIChat = () => {
   // Global dark/light mode state
   const [isDark, setIsDark] = useState(false);
-
+  const role = localStorage.getItem("role");
   // Global container and navigation classes
-  const containerClasses = isDark ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-800';
-  const navClasses = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const containerClasses = isDark
+    ? "bg-gray-900 text-gray-100"
+    : "bg-gray-100 text-gray-800";
+  const navClasses = isDark
+    ? "bg-gray-800 border-gray-700"
+    : "bg-white border-gray-200";
 
   // Update document class for Tailwind dark mode
   useEffect(() => {
     if (isDark) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
     } else {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
     }
   }, [isDark]);
 
   return (
     <ChatProvider>
-      <div className={`min-h-screen ${containerClasses}`}>
+      <div className={`min-h-screen ${containerClasses} pt-[64px]`}>
         {/* Navigation Bar */}
-        <nav className={`${navClasses} w-full flex items-center justify-between px-4 py-2 border-b`}>
-          <div className="flex items-center space-x-2">
-            <Brain className="w-6 h-6 text-blue-500" />
-            <span className="text-xl font-bold">NeuroView</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setIsDark(!isDark)}
-              className={`text-sm ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-800 hover:text-gray-900'}`}
-            >
-              {isDark ? 'Light Mode' : 'Dark Mode'}
-            </button>
-            <a
-              href="about"
-              className={`text-sm ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-800 hover:text-gray-900'}`}
-            >
-              About
-            </a>
-          </div>
-        </nav>
+        <Navbar
+          isDark={isDark}
+          setIsDark={setIsDark}
+          dashboardType="chat"
+          role={role}
+        />
 
         {/* Main Chat Interface */}
         <main className="max-w-4xl mx-auto px-4 py-8">
