@@ -148,6 +148,6 @@ async def predict_mri(file: UploadFile = File(...)):
         json.dump(report, json_file, indent=4)
 
     return {
-        "report": FileResponse(path=report_path, filename="./VisionModel/report/mri_report.json", media_type="application/json"),
-        "segmentation_file": FileResponse(path=output_file_path, filename="./VisionModel/report/output_prediction.nii.gz", media_type="application/octet-stream")
+        "report": FileResponse(path="../backend/VisionModel/report/mri_report.json", filename="../backend/VisionModel/report/mri_report.json", media_type="application/json"),
+        "segmentation_file": FileResponse(path="../backend/VisionModel/report/output_prediction.nii.gz", filename="../backend/VisionModel/report/output_prediction.nii.gz", media_type="application/octet-stream")
     }
