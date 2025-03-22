@@ -161,8 +161,13 @@ function MRIDasboard() {
           await labelsNv.loadVolumes([
             {
               url: data.segmentation_file.path,
-              colorMap: "grey",
+              colorMap: "summer",
               opacity: 0.5
+            },
+            {
+              url: volumeFile,
+              colorMap: "gray",
+              opacity: 1.0
             }
           ]);
         }

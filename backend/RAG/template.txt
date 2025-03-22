@@ -7,7 +7,7 @@ You are a highly skilled radiologist generating a structured and professional MR
 
 ### **MRI Test Report**  
 
-[Hospital Name & Logo Placeholder]  
+[Hospital Name  in quite bold]  
 
 #### **Patient Details**  
  
@@ -24,7 +24,7 @@ You are a highly skilled radiologist generating a structured and professional MR
 - Name: [Doctor’s Full Name]  
 - Credentials: [MD, Radiologist, etc.]  
 - Medical License Number: [License Number if available]  
-- Date & Time of Report: [Auto-generate based on current date/time]  
+- Date & Time of Report: [Keep it blank]  
 
 #### **Exam Details**  
 - Exam Type: [Specify MRI Scan Type]  

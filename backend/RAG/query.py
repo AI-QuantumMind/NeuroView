@@ -1,18 +1,17 @@
 from pinecone import Pinecone
 import os
 from dotenv import load_dotenv
-from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 load_dotenv()  
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-
+GOOGLE_API_KEY=os.getenv("GEMINI_API_KEY")
 pc = Pinecone(api_key=PINECONE_API_KEY)
-index_name = "my-nomic-index"
+index_name = "my-gemini-index"
 index = pc.Index(index_name)
 
-embedding_model = HuggingFaceEmbeddings(
-    model_name="nomic-ai/nomic-embed-text-v1",
-    model_kwargs={"trust_remote_code": True}
+embedding_model = GoogleGenerativeAIEmbeddings(
+    model="models/embedding-001", google_api_key=GOOGLE_API_KEY
 )
 
 def search_pinecone(query_text):
