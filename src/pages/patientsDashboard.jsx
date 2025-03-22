@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Brain, Moon, Sun, FileText, User, Calendar } from "lucide-react";
 import Navbar from "../components/Navbar";
 
-function PatientsDashboard() {
-  const [isDark, setIsDark] = useState(false);
+function PatientsDashboard({ isDark }) {
+  // Accept isDark as a prop
   const role = localStorage.getItem("role");
 
   // Example report data
@@ -47,12 +47,7 @@ function PatientsDashboard() {
   return (
     <div className={`min-h-screen ${containerClasses}`}>
       {/* Navigation Bar */}
-      <Navbar
-        isDark={isDark}
-        setIsDark={setIsDark}
-        dashboardType="patient"
-        role={role}
-      />
+      <Navbar isDark={isDark} dashboardType="patient" role={role} />
 
       {/* Main Content */}
       <div className="p-6">

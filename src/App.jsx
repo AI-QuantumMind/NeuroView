@@ -29,7 +29,11 @@ const ProtectedRoute = ({ user, roleRequired, children }) => {
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    // Retrieve dark mode state from localStorage on initial load
+    const savedDarkMode = localStorage.getItem("darkMode");
+    return savedDarkMode ? savedDarkMode === "true" : false;
+  });
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -37,6 +41,11 @@ function App() {
     if (token && role) setUser({ token, role });
     setLoading(false);
   }, []);
+
+  // Save dark mode state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("darkMode", isDark ? "true" : "false");
+  }, [isDark]);
 
   if (loading) {
     return <div>Loading...</div>; // Or a loading spinner
@@ -89,7 +98,7 @@ function AppContent({ user, setUser, isDark, setIsDark }) {
           path="/mri-dashboard"
           element={
             <ProtectedRoute user={user} roleRequired="doctor">
-              <MRIDashboard />
+              <MRIDashboard isDark={isDark} />
             </ProtectedRoute>
           }
         />
@@ -97,7 +106,7 @@ function AppContent({ user, setUser, isDark, setIsDark }) {
           path="/patient-dashboard"
           element={
             <ProtectedRoute user={user} roleRequired="patient">
-              <PatientsDashboard />
+              <PatientsDashboard isDark={isDark} />
             </ProtectedRoute>
           }
         />
@@ -105,7 +114,7 @@ function AppContent({ user, setUser, isDark, setIsDark }) {
           path="/about"
           element={
             <ProtectedRoute user={user}>
-              <AboutUs />
+              <AboutUs isDark={isDark} />
             </ProtectedRoute>
           }
         />
@@ -113,7 +122,7 @@ function AppContent({ user, setUser, isDark, setIsDark }) {
           path="/chat"
           element={
             <ProtectedRoute user={user}>
-              <ChatInterface />
+              <ChatInterface isDark={isDark} />
             </ProtectedRoute>
           }
         />
@@ -123,7 +132,7 @@ function AppContent({ user, setUser, isDark, setIsDark }) {
           path="/patient-profile"
           element={
             <ProtectedRoute user={user} roleRequired="patient">
-              <PatientProfile />
+              <PatientProfile isDark={isDark} />
             </ProtectedRoute>
           }
         />
@@ -131,7 +140,7 @@ function AppContent({ user, setUser, isDark, setIsDark }) {
           path="/doctor-profile"
           element={
             <ProtectedRoute user={user} roleRequired="doctor">
-              <DoctorProfile />
+              <DoctorProfile isDark={isDark} />
             </ProtectedRoute>
           }
         />

@@ -81,6 +81,7 @@ class MonitoredMedication(BaseModel):
 
 class MonitoredPatient(BaseModel):
     patient_id: str  # ObjectId stored as string
+    name : str
     medications_given: List[MonitoredMedication] = []
 
 class DoctorBase(BaseModel):
@@ -102,10 +103,14 @@ class DoctorOut(DoctorBase):
 
 # --- For Patient ---
 class Medication(BaseModel):
+    
     medication_name: str
     dosage: str
     start_date: datetime
     end_date: Optional[datetime] = None
+
+# class Reports(BaseModel):
+#     links: str
 
 class MedicalRecord(BaseModel):
     condition: str
@@ -127,7 +132,7 @@ class PatientCreate(PatientBase):
 class PatientOut(PatientBase):
     id: str = Field(alias="_id")
     medical_records: List[MedicalRecord] = []
-    doctor_id: Optional[str] = None
+    doctor_id: Optional[List[str]] = None
 
     class Config:
         allow_population_by_field_name = True
@@ -178,6 +183,61 @@ async def get_doctor_by_id(id: str):
     doctor["_id"] = str(doctor["_id"])
     return doctor
 
+# update or assigns doctor to patient and patients to doctor
+@app.post("/doctors/{doctor_id}/monitor-patient/{patient_id}")
+async def monitor_patient(
+    doctor_id: str,
+    patient_id: str,
+    medication: MonitoredMedication  # Use the existing MonitoredMedication model
+):
+    # Check if the doctor exists
+    doctor = await db.doctors.find_one({"_id": ObjectId(doctor_id)})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+
+    # Check if the patient exists
+    patient = await db.patients.find_one({"_id": ObjectId(patient_id)})
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Check if the patient is already monitored by the doctor
+    patient_monitored = next(
+        (p for p in doctor.get("patients_monitored", []) if p["patient_id"] == patient_id),
+        None,
+    )
+
+    if patient_monitored:
+        # If the patient is already monitored, add the medication to the list
+        await db.doctors.update_one(
+            {"_id": ObjectId(doctor_id), "patients_monitored.patient_id": patient_id},
+            {"$push": {"patients_monitored.$.medications_given": medication.dict()}},
+        )
+    else:
+        # If the patient is not monitored, add the patient to the list with the medication
+        await db.doctors.update_one(
+            {"_id": ObjectId(doctor_id)},
+            {"$push": {"patients_monitored": {
+                "patient_id": patient_id,
+                "name": patient["name"],  # Include the patient's name
+                "medications_given": [medication.dict()]
+            }}},
+        )
+
+    # Check if the doctor is already assigned to the patient
+    if "doctor_id" not in patient:
+        patient["doctor_id"] = []  # Initialize if not present
+
+    if doctor_id not in patient["doctor_id"]:
+        # Add the doctor to the patient's doctor_id array
+        await db.patients.update_one(
+            {"_id": ObjectId(patient_id)},
+            {"$push": {"doctor_id": doctor_id}},
+        )
+
+    # Return success message
+    return {"message": "Patient monitored and medication added successfully"}
+# Patients API
+
 # Create a new patient
 @app.post("/patients", response_model=PatientOut, status_code=status.HTTP_201_CREATED)
 async def create_patient(patient: PatientCreate):
@@ -201,6 +261,40 @@ async def get_patient_by_id(id: str):
     patient["_id"] = str(patient["_id"])
     return patient
 
+
+@app.put("/patients/{id}/medical-records", response_model=PatientOut)
+async def update_medical_records(id: str, medical_records: List[MedicalRecord]):
+    patient = await db.patients.find_one({"_id": ObjectId(id)})
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient not found")
+
+    # Append the new medical records to the existing ones
+    updated_data = {"$push": {"medical_records": {"$each": jsonable_encoder(medical_records)}}}
+    await db.patients.update_one({"_id": ObjectId(id)}, updated_data)
+
+    # Return updated patient data
+    updated_patient = await db.patients.find_one({"_id": ObjectId(id)})
+    updated_patient["_id"] = str(updated_patient["_id"])  # Convert ObjectId to string
+    return updated_patient
+
+@app.get("/patients-list")
+async def get_patients_list():
+    try:
+        # Fetch all patients from the database
+        patients = await db.patients.find({}, {"_id": 1, "name": 1}).to_list(None)
+
+        # Format the response
+        patients_list = [
+            {"patient_id": str(patient["_id"]), "name": patient["name"]}
+            for patient in patients
+        ]
+
+        return patients_list
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+## Auth Api 
 # Signup endpoint (for both doctors and patients)
 @app.post("/signup")
 async def signup(data: SignupModel):
