@@ -131,7 +131,7 @@ async def predict_mri(file: UploadFile = File(...)):
     prediction = predict(processed_image)
     segmentation = np.argmax(prediction, axis=-1)
     
-    output_file_path = "./report/output_prediction.nii.gz"
+    output_file_path = "./VisionModel/report/output_prediction.nii.gz"
     save_nifti(segmentation, output_file_path)
 
     mri_details = extract_mri_details(nifti_image)
@@ -143,11 +143,11 @@ async def predict_mri(file: UploadFile = File(...)):
         "segmentation_file": output_file_path
     }
 
-    report_path = "./report/mri_report.json"
+    report_path = "./VisionModel/report/mri_report.json"
     with open(report_path, "w") as json_file:
         json.dump(report, json_file, indent=4)
 
     return {
-        "report": FileResponse(path=report_path, filename="./report/mri_report.json", media_type="application/json"),
-        "segmentation_file": FileResponse(path=output_file_path, filename="./report/output_prediction.nii.gz", media_type="application/octet-stream")
+        "report": FileResponse(path=report_path, filename="./VisionModel/report/mri_report.json", media_type="application/json"),
+        "segmentation_file": FileResponse(path=output_file_path, filename="./VisionModel/report/output_prediction.nii.gz", media_type="application/octet-stream")
     }

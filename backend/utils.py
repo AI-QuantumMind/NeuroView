@@ -1,17 +1,13 @@
 import markdown
-# from weasyprint import HTML
-def convert_md_to_pdf(md_file):
-    """
-    Converts a Markdown file to a PDF using pdfkit.
-    """
-    pdf_file = md_file.replace(".md", ".pdf")
+from xhtml2pdf import pisa
 
-    with open(md_file, "r") as file:
+def convert_md_to_pdf(md_file):
+    pdf_file = md_file.replace(".md", ".pdf")
+    with open(md_file, "r", encoding="utf-8") as file:
         md_content = file.read()
     html_content = markdown.markdown(md_content)
-
-    HTML(string=html_content).write_pdf("output.pdf")
-
-    return "output.pdf"
-
-
+    with open(pdf_file, "w+b") as result_file:
+        pisa_status = pisa.CreatePDF(html_content, dest=result_file)
+    if pisa_status.err:
+        return None
+    return pdf_file

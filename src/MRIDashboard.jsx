@@ -26,7 +26,6 @@ function MRIDasboard() {
   const AI_MODELS = [
     { id: "tumor-seg-v1", name: "Tumor Segmentation v1" },
     { id: "tumor-seg-v2", name: "Tumor Segmentation v2" },
-    { id: "multi-class-seg", name: "Multi-class Segmentation" },
   ];
 
   // Theme-dependent classes
@@ -48,7 +47,7 @@ function MRIDasboard() {
   const textSecondary = isDark ? "text-gray-500" : "text-gray-800";
 
   // Niivue background color, updated dynamically
-  const niivueBgColor = isDark ? [0, 0, 0, 1] : [0.95, 0.95, 0.95, 1];
+  const niivueBgColor = [0, 0, 0, 1] ;
 
   // Initialize Niivue for MRI viewer
   useEffect(() => {
@@ -119,7 +118,7 @@ function MRIDasboard() {
         }
       } catch (err) {
         console.error(err);
-        setError("Error loading the file. Make sure it’s a valid NIfTI file.");
+        setError("Error loading the file. Make sure it's a valid NIfTI file.");
       }
     },
     accept: {
@@ -130,33 +129,55 @@ function MRIDasboard() {
 
   // Handler to simulate AI inference
   const handleInference = async () => {
-    if (!volumeFile || !selectedModel) {
-      setError("Please select a model and load a volume first.");
-      return;
+  if (!volumeFile || !selectedModel) {
+    setError("Please select a model and load a volume first.");
+    return;
+  }
+  setIsProcessing(true);
+  setError("");
+  try {
+    const formData = new FormData();
+    const fileBlob = new Blob([volumeFile], { type: "application/octet-stream" });
+    formData.append("file", fileBlob, "mri_volume.nii.gz");
+    formData.append("model", selectedModel);
+    const endpoint =
+      selectedModel === "tumor-seg-v1"
+        ? "http://localhost:8000/ai/predict"
+        : "http://localhost:8000/yolo/predict";
+    const response = await fetch(endpoint, {
+      method: "POST",
+      body: formData,
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || `Server error: ${response.status}`);
     }
-
-    setIsProcessing(true);
-    setError("");
-
-    try {
-      // Example: Load the same volume in the "Labels Viewer" with a different colorMap
-      if (labelsNv) {
-        await labelsNv.loadVolumes([
-          {
-            url: volumeFile,
-            name: "AI Processed Labels",
-            colorMap: "red",
-            opacity: 0.5,
-          },
-        ]);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Error running inference.");
-    } finally {
-      setIsProcessing(false);
+    const data = await response.json();
+    console.log("Inference Response:", data);
+    console.log(labelsNv)
+    if (labelsNv) {
+      console.log("S1")
+      await labelsNv.loadVolumes([
+        {
+          url: "../backend/VisionModel/report/output_prediction.nii.gz",
+          colorMap: "grey",
+          opacity: 0.5,
+        },
+      ]);
     }
-  };
+    console.log("Done")
+  } catch (err) {
+    console.error("Inference Error:", err);
+    setError(err.message || "Error running inference or loading labels.");
+  } finally {
+    setIsProcessing(false);
+  }
+  
+};
+
+
+
 
   // Handler to simulate saving labels
   const handleSaveLabels = () => {
@@ -178,11 +199,15 @@ function MRIDasboard() {
         role={role}
       />
 
+      
+
       {/* Main Content */}
       <div className="flex flex-1">
         {/* Left Sidebar */}
+        
         <aside className={`${sideBarClasses} w-72 p-6 shadow-lg rounded-r-lg`}>
           {/* Open Brain T1 MRI */}
+          
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-2">Open Brain T1 MRI</h2>
             <p className={`text-sm ${textSecondary} mb-4`}>
