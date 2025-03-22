@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React from "react";
 import { Brain } from "lucide-react";
 import Navbar from "./components/Navbar";
-function AboutUs() {
-  const [isDark, setIsDark] = useState(false);
+
+function AboutUs({ isDark, setIsDark }) {
+  // Accept isDark and setIsDark as props
   const role = localStorage.getItem("role");
+
   // Theme-dependent classes
   const containerClasses = isDark
     ? "bg-gray-900 text-gray-100"

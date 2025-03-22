@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Menu, X, Brain, LogOut, Sun, Moon, User } from "lucide-react";
+import { Menu, X, Brain, LogOut, Sun, Moon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -33,6 +33,9 @@ const Navbar = ({ isDark, setIsDark, dashboardType, role }) => {
   // Toggle mobile menu
   const toggleMobileMenu = () => setMobileMenuOpen(!isMobileMenuOpen);
 
+  // Close mobile menu when a link is clicked
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
   return (
     <nav
       className={`w-full fixed top-0 left-0 z-50 flex items-center justify-between px-6 py-3 
@@ -52,7 +55,7 @@ const Navbar = ({ isDark, setIsDark, dashboardType, role }) => {
       </div>
 
       {/* Desktop Navigation Links */}
-      <div className="flex items-center space-x-6 ml-auto">
+      <div className="hidden md:flex items-center space-x-6 ml-auto">
         {navLinks.map((link) => (
           <Link
             key={link.name}
@@ -66,16 +69,17 @@ const Navbar = ({ isDark, setIsDark, dashboardType, role }) => {
         ))}
 
         {/* Dark/Light Mode Button */}
-        <button
+        {/* <button
           onClick={() => setIsDark(!isDark)}
           className={`p-2 rounded-lg transition-colors duration-300 ${
             isDark
               ? "bg-gray-800 text-indigo-400 hover:bg-gray-700"
               : "bg-gray-200 text-indigo-600 hover:bg-indigo-100"
           }`}
+          aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
+        </button> */}
 
         {/* Logout Button */}
         <button
@@ -90,6 +94,7 @@ const Navbar = ({ isDark, setIsDark, dashboardType, role }) => {
               ? "bg-gray-800 text-indigo-400 hover:bg-gray-700"
               : "bg-gray-200 text-indigo-600 hover:bg-indigo-100"
           }`}
+          aria-label="Logout"
         >
           <LogOut className="w-5 h-5" />
         </button>
@@ -99,6 +104,7 @@ const Navbar = ({ isDark, setIsDark, dashboardType, role }) => {
       <button
         onClick={toggleMobileMenu}
         className="md:hidden p-2 rounded-lg focus:outline-none"
+        aria-label="Toggle Mobile Menu"
       >
         {isMobileMenuOpen ? (
           <X className="w-6 h-6 text-indigo-600" />
@@ -110,28 +116,70 @@ const Navbar = ({ isDark, setIsDark, dashboardType, role }) => {
       {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className={`md:hidden ${
-              isDark ? "bg-gray-900" : "bg-white"
-            } shadow-lg`}
-          >
-            <div className="container mx-auto px-4 py-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.path}
-                  className={`block py-2 hover:text-indigo-500 transition-colors duration-300 ${
+          <>
+            {/* Backdrop */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 md:hidden"
+              onClick={closeMobileMenu}
+            />
+
+            {/* Mobile Menu Content */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={`fixed top-16 left-0 right-0 ${
+                isDark ? "bg-gray-900" : "bg-white"
+              } shadow-lg md:hidden`}
+            >
+              <div className="container mx-auto px-4 py-3">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.name}
+                    to={link.path}
+                    onClick={closeMobileMenu}
+                    className={`block py-2 hover:text-indigo-500 transition-colors duration-300 ${
+                      isDark ? "text-gray-300" : "text-gray-800"
+                    } font-medium`}
+                  >
+                    {link.name}
+                  </Link>
+                ))}
+
+                {/* Dark/Light Mode Button */}
+                <button
+                  onClick={() => {
+                    setIsDark(!isDark);
+                    closeMobileMenu();
+                  }}
+                  className={`w-full text-left py-2 hover:text-indigo-500 transition-colors duration-300 ${
                     isDark ? "text-gray-300" : "text-gray-800"
                   } font-medium`}
+                  aria-label={
+                    isDark ? "Switch to Light Mode" : "Switch to Dark Mode"
+                  }
                 >
-                  {link.name}
-                </Link>
-              ))}
-            </div>
-          </motion.div>
+                  {isDark ? "Light Mode" : "Dark Mode"}
+                </button>
+
+                {/* Logout Button */}
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("role");
+                    localStorage.removeItem("userId");
+                    window.location.href = "/login";
+                  }}
+                  className={`w-full text-left py-2 hover:text-indigo-500 transition-colors duration-300 ${
+                    isDark ? "text-gray-300" : "text-gray-800"
+                  } font-medium`}
+                  aria-label="Logout"
+                >
+                  Logout
+                </button>
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </nav>
