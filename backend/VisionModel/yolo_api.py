@@ -28,8 +28,7 @@ async def predict_image(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Error processing the image file")
     results = model.predict(source=image, imgsz=640, conf=0.5)
     annotated_image = results[0].plot(line_width=1)
-    import os
-    os.makedirs(".VisionModel/report", exist_ok=True)
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
         output_path = temp_file.name
         cv2.imwrite(output_path, annotated_image)
