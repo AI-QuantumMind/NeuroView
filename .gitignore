@@ -29,3 +29,5 @@ __pycache__
 
 backend/VisionModel/report/*
 !backend/VisionModel/report/.gitkeep
+*.md
+*.pdf

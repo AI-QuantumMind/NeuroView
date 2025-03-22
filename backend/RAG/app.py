@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 import os
 from fastapi import Response, HTTPException, APIRouter
@@ -29,27 +30,55 @@ def chat(request: ChatRequest):
     return {"query": request.query, "response": response}
 
 @route_rag.post("/report")
-def generate_report(request: ReportRequest):
-    report = report_generation(request.data_json, request.patient_id, request.doctor_id)
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_filename = f"./patient/{request.patient_id}/medical_report_{timestamp}.md"
-    os.makedirs(f"./patient/{request.patient_id}", exist_ok=True)
-    with open(report_filename, "w") as file:
-        file.write(report)
-    pdf_filename = convert_md_to_pdf(report_filename)
-    client = AsyncIOMotorClient(MONGO_URI)
-    db = client.get_default_database()
-    report_document = {
-        "patient_id": request.patient_id,
-        "doctor_id": request.doctor_id,
-        "report_content": report,
-        "pdf_path": pdf_filename,
-        "timestamp": timestamp,
-        "generated_at": datetime.now()
-    }
-    result = db.reports.insert_one(report_document)
-    client.close()
-    return {"report": report, "pdf_path": pdf_filename, "doctor_id": request.doctor_id, "time": timestamp}
+async def generate_report(request: ReportRequest):
+    try:
+        # Generate report
+        report = await asyncio.to_thread(
+            report_generation, 
+            request.data_json, 
+            request.patient_id, 
+            request.doctor_id
+        )
+        client = AsyncIOMotorClient(MONGO_URI)
+        db = client.get_default_database() 
+        # Create directory
+        dir_path = f"./patient/{request.patient_id}"
+        await asyncio.to_thread(os.makedirs, dir_path, exist_ok=True)
+        
+        # Write report (async)
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        report_filename = f"{dir_path}/medical_report_{timestamp}.md"
+        with open(report_filename, "w") as file:
+            file.write(report)
+        
+        # Convert to PDF (async)
+        pdf_filename =  convert_md_to_pdf( report_filename)
+        
+        
+        # DB Insert
+        report_document = {
+            "patient_id": request.patient_id,
+            "doctor_id": request.doctor_id,
+            "report_content": report,
+            "pdf_path": pdf_filename,
+            "timestamp": timestamp,
+            "generated_at": datetime.utcnow()
+        }
+        
+        result = await db.reports.insert_one(report_document)
+        
+        return {
+            "report": report,
+            "pdf_path": pdf_filename,
+            "doctor_id": request.doctor_id,
+            "time": timestamp
+        }
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Report generation failed: {str(e)}"
+        )
 
 @route_rag.post("/download")
 def download_report(request: DownloadRequest):

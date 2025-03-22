@@ -158,7 +158,6 @@ class SignupModel(BaseModel):
 class SigninModel(BaseModel):
     email: EmailStr
     password: str
-
 # -----------------------
 # API Routes
 # -----------------------

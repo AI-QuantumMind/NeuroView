@@ -167,7 +167,7 @@ function MRIDasboard() {
             {
               url: volumeFile,
               colorMap: "gray",
-              opacity: 1.0
+              opacity: .5
             }
           ]);
         }
