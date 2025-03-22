@@ -13,7 +13,7 @@ from bson import ObjectId
 from VisionModel.ai_model import router as ai_router
 from fastapi.middleware.cors import CORSMiddleware
 from RAG.app import route_rag
-
+from VisionModel.yolo_api import router as yolo_router
 # -----------------------
 # Load environment variables
 # -----------------------
@@ -250,6 +250,7 @@ async def signin(data: SigninModel):
     return {"message": f"Login successful as {role}", "token": token, "role": role,"id":user_id}
 
 app.include_router(ai_router, prefix="/ai")
+app.include_router(yolo_router, prefix="/yolo")
 # -----------------------
 # Include the RAG routes
 # -----------------------
