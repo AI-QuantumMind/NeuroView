@@ -9,7 +9,7 @@ load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 
 # Setup FastAPI and Database
-app = FastAPI(title="Medical AI Assistant API")
+app = FastAPI(title="NeuroView API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,4 +34,4 @@ app.include_router(rag.router, prefix="/api/rag", tags=["RAG"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Medical AI Assistant API"} 
+    return {"message": "Welcome to NeuroView API"} 
