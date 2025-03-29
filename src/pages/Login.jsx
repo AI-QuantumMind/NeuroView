@@ -1,72 +1,65 @@
 import React, { useState } from "react";
 import { Brain, Mail, Lock } from "lucide-react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Loader from "../components/loader";
+import { useAuth } from '../hooks/useAuth';
 
-export function Login({ onLogin }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
+const Login = () => {
+  const [credentials, setCredentials] = useState({
+    email: '',
+    password: '',
+  });
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setError('');
+    setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/signin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed");
-      }
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role);
-      // console.log(data);
-      localStorage.setItem("userId", data.id);
-
-      onLogin({ token: data.token, role: data.role });
-      toast.success(`Successfully logged In as ${data.role}`);
-
-      if (data.role === "doctor") {
-        navigate("/mri-dashboard");
-      } else if (data.role === "patient") {
-        navigate("/patient-dashboard");
-      }
-    } catch (err) {
-      setError(err.message);
+      await login(credentials);
+      navigate('/dashboard');
+    } catch (error) {
+      setError(error.message || 'Failed to login');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 bg-white/80 backdrop-blur-sm p-10 rounded-2xl shadow-xl border border-gray-100">
         <div className="text-center">
           <div className="flex justify-center">
-            <Brain className="w-12 h-12 text-indigo-600" />
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 rounded-full">
+              <Brain className="w-12 h-12 text-white" />
+            </div>
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Welcome back
+          <h2 className="mt-6 text-3xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Welcome to NeuroView
           </h2>
-          <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to access your medical dashboard
+          </p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
-              {error}
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -86,9 +79,9 @@ export function Login({ onLogin }) {
                   id="email"
                   type="email"
                   required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  value={credentials.email}
+                  onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ease-in-out"
                   placeholder="doctor@hospital.com"
                 />
               </div>
@@ -109,35 +102,36 @@ export function Login({ onLogin }) {
                   id="password"
                   type="password"
                   required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  value={credentials.password}
+                  onChange={(e) => setCredentials({ ...credentials, password: e.target.value })}
+                  className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-150 ease-in-out"
                 />
               </div>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-            disabled={loading}
-          >
-            {loading ? <Loader /> : "Sign in"}
-          </button>
-        </form>
-
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{" "}
-            <a
-              href="/signup"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+          <div>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition duration-150 ease-in-out transform hover:scale-[1.02]"
             >
-              Sign up
-            </a>
-          </p>
-        </div>
+              {isLoading ? <Loader /> : 'Sign in'}
+            </button>
+          </div>
+
+          <div className="text-sm text-center">
+            <Link
+              to="/register"
+              className="font-medium text-indigo-600 hover:text-indigo-500 transition duration-150 ease-in-out"
+            >
+              Don't have an account? Sign up
+            </Link>
+          </div>
+        </form>
       </div>
     </div>
   );
-}
+};
+
+export default Login;
