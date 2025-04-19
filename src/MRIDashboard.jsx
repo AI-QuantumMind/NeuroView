@@ -5,6 +5,7 @@ import { Moon, Sun } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Brain } from "lucide-react";
 import Navbar from "./components/Navbar";
+import { color } from "framer-motion";
 
 function MRIDasboard() {
   const mriCanvasRef = useRef(null);
@@ -13,13 +14,18 @@ function MRIDasboard() {
   const [labelsNv, setLabelsNv] = useState(null);
   const [error, setError] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
-  const [volumeFile, setVolumeFile] = useState(null);
+  const [t1ceFile, setT1ceFile] = useState(null);
+  const [flairFile, setFlairFile] = useState(null);
   const [imageSrc, setImageSrc] = useState(null);
   const [resultImage, setResultImage] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [labelName, setLabelName] = useState("labels.nii.gz");
   const [selectedInputType, setSelectedInputType] = useState("");
   const [isDark, setIsDark] = useState(false);
+  const [isRendered, setIsRendered] = useState(false);
+  const [t1ceFileName, setT1ceFileName] = useState("");
+  const [flairFileName, setFlairFileName] = useState("");
+  const [selectedImageType, setSelectedImageType] = useState("t1ce");
   const role = localStorage.getItem("role");
   const AI_MODELS = [
     { id: "tumor-seg-v1", name: "Tumor Segmentation v1" },
@@ -40,6 +46,7 @@ function MRIDasboard() {
   const textPrimary = isDark ? "text-gray-300" : "text-gray-800";
   const textSecondary = isDark ? "text-gray-500" : "text-gray-800";
   const niivueBgColor = [0, 0, 0, 1];
+  const [selectedFileType, setSelectedFileType] = useState("t1ce");
   useEffect(() => {
     if (mriCanvasRef.current && !mriNv && selectedInputType === "nii.gz") {
       const nv = new Niivue({
@@ -74,109 +81,168 @@ function MRIDasboard() {
       labelsNv.drawScene();
     }
   }, [isDark, mriNv, labelsNv, niivueBgColor]);
-  const { getRootProps, getInputProps } = useDropzone({
+  const { getRootProps: getT1ceRootProps, getInputProps: getT1ceInputProps } = useDropzone({
     onDrop: async (acceptedFiles) => {
       const file = acceptedFiles[0];
       if (!file) return;
-      if (selectedInputType === "nii.gz") {
-        if (!file.name.endsWith(".nii") && !file.name.endsWith(".nii.gz")) {
-          setError("Please upload a valid .nii or .nii.gz file");
-          return;
-        }
-        try {
-          const arrayBuffer = await file.arrayBuffer();
-          setVolumeFile(arrayBuffer);
-          setImageSrc(null);
-          setError("");
-          if (mriNv) {
-            await mriNv.loadVolumes([
-              {
-                url: arrayBuffer,
-                name: file.name,
-                colorMap: "gray",
-                opacity: 1.0
-              }
-            ]);
-          }
-        } catch (err) {
-          console.error(err);
-          setError("Error loading the file. Make sure it's a valid NIfTI file.");
-        }
-      } else {
-        if (
-          !file.name.match(/\.(jpg|jpeg|png)$/i)
-        ) {
-          setError("Please upload a valid image file (.jpg, .jpeg, .png)");
-          return;
-        }
-        const imgUrl = URL.createObjectURL(file);
-        setImageSrc(imgUrl);
-        setVolumeFile(null);
+
+      if (!file.name.toLowerCase().includes('.nii.gz')) {
+        setError("Please upload a valid .nii.gz file for T1CE");
+        return;
+      }
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        setT1ceFile(arrayBuffer);
+        setT1ceFileName(file.name);
         setError("");
+        setIsRendered(false);
+
+        // Save T1CE file to backend immediately
+        await saveFileToBackend(file, 't1ce');
+      } catch (err) {
+        console.error(err);
+        setError("Error loading the T1CE file. Make sure it's a valid NIfTI file.");
       }
     },
     accept: {
       "application/gzip": [".nii.gz"],
-      "application/octet-stream": [".nii"],
+      "application/octet-stream": [".nii.gz"]
+    }
+  });
+  const { getRootProps: getFlairRootProps, getInputProps: getFlairInputProps } = useDropzone({
+    onDrop: async (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      if (!file) return;
+
+      if (!file.name.toLowerCase().includes('.nii.gz')) {
+        setError("Please upload a valid .nii.gz file for FLAIR");
+        return;
+      }
+
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        setFlairFile(arrayBuffer);
+        setFlairFileName(file.name);
+        setError("");
+        setIsRendered(false);
+
+        // Save FLAIR file to backend immediately
+        await saveFileToBackend(file, 'flair');
+      } catch (err) {
+        console.error(err);
+        setError("Error loading the FLAIR file. Make sure it's a valid NIfTI file.");
+      }
+    },
+    accept: {
+      "application/gzip": [".nii.gz"],
+      "application/octet-stream": [".nii.gz"]
+    }
+  });
+  const { getRootProps: getImageRootProps, getInputProps: getImageInputProps } = useDropzone({
+    onDrop: async (acceptedFiles) => {
+      const file = acceptedFiles[0];
+      if (!file) return;
+
+      if (!file.name.match(/\.(jpg|jpeg|png)$/i)) {
+        setError("Please upload a valid image file (.jpg, .jpeg, .png)");
+        return;
+      }
+      const imgUrl = URL.createObjectURL(file);
+      setImageSrc(imgUrl);
+      setT1ceFile(null);
+      setFlairFile(null);
+      setError("");
+      setIsRendered(false);
+    },
+    accept: {
       "image/jpeg": [".jpg", ".jpeg"],
       "image/png": [".png"]
     }
   });
-  const handleInference = async () => {
-    if ((!volumeFile && !imageSrc) || !selectedModel) {
-      setError("Please select a model and load an input first.");
-      return;
-    }
-    setIsProcessing(true);
-    setError("");
-    try {
-      const formData = new FormData();
-      if (selectedInputType === "nii.gz") {
-        const fileBlob = new Blob([volumeFile], { type: "application/octet-stream" });
-        formData.append("file", fileBlob, "mri_volume.nii.gz");
-      } else {
-        const response = await fetch(imageSrc);
-        const blob = await response.blob();
-        formData.append("file", blob, "input_image.jpg");
+  const handleRender = async () => {
+    if (selectedInputType === "nii.gz") {
+      if (!t1ceFile || !flairFile) {
+        setError("Please upload both T1CE and FLAIR files.");
+        return;
       }
-      formData.append("model", selectedModel);
-      const endpoint =
-        selectedModel === "tumor-seg-v1"
-          ? "http://localhost:8000/ai/predict"
-          : "http://localhost:8000/yolo/predict";
-      const response = await fetch(endpoint, {
-        method: "POST",
-        body: formData,
-        credentials: "include"
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || `Server error: ${response.status}`);
-        console.log(response)
-      }
-      const data = await response.json();
-      console.log(data)
-      if (selectedModel === "tumor-seg-v1") {
-        if (labelsNv) {
-          await labelsNv.loadVolumes([
+
+      try {
+        if (mriNv) {
+          // Get the filename based on selected image type
+          const filename = selectedImageType === "t1ce"
+            ? t1ceFileName
+            : flairFileName;
+
+          // Load the selected image from backend
+          await mriNv.loadVolumes([
             {
-              url: data.segmentation_file.path,
-              colorMap: "summer",
-              opacity: 0.5
-            },
-            {
-              url: volumeFile,
+              url: `backend/patient_data/mri_scans/user/${filename}`,
               colorMap: "gray",
-              opacity: .5
+              opacity: 1.0
             }
           ]);
+
+          setIsRendered(true);
+          setError("");
         }
-      } else {
-        setResultImage(data.result.path);
+      } catch (err) {
+        console.error(err);
+        setError("Error rendering the file. Please try again.");
       }
+    }
+  };
+  const handleInference = async () => {
+    if (!t1ceFile || !flairFile) {
+      setError("Please select both T1CE and FLAIR files");
+      return;
+    }
+
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+
+      // Create a request to trigger inference with the already uploaded files
+      const response = await fetch('http://localhost:8000/api/mri/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          t1ce_filename: t1ceFileName,
+          flair_filename: flairFileName
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Update state with the results
+      if (labelsNv) {
+        await labelsNv.loadVolumes([
+          {
+            url: `./backend/patient_data/mri_scans/user/${"resize_t1ce.nii.gz"}`,
+            color: "gray",
+            opacity: 0.5
+          },
+          {
+            url: `./backend/patient_data/mri_scans/user/${data.segmentation_file}`,
+            colorMap: "winter",
+            opacity: 1
+          }
+          
+        ]);
+      }
+
+      // Show success message
+      setError("");
+
     } catch (err) {
-      console.error("Inference Error:", err);
-      setError(err.message || "Error running inference or loading labels.");
+      setError(err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -188,23 +254,48 @@ function MRIDasboard() {
     }
     alert(`Saving labels as "${labelName}" (simulate).`);
   };
+  // Add a new function to save files to the backend
+  const saveFileToBackend = async (file, fileType) => {
+    try {
+      const formData = new FormData();
+
+      // Create new filename with appropriate suffix
+      const newFileName = file.name.replace('.nii.gz', `_${fileType}.nii.gz`);
+
+      // Create new File object with the new name
+      const renamedFile = new File([file], newFileName, { type: file.type });
+
+      // Append file to formData
+      formData.append(`${fileType}_file`, renamedFile);
+
+      // Send to backend using the API endpoint
+      const response = await fetch(`http://localhost:8000/api/mri/upload/${fileType}`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Store the filename for later use
+      if (fileType === 't1ce') {
+        setT1ceFileName(newFileName);
+      } else if (fileType === 'flair') {
+        setFlairFileName(newFileName);
+      }
+
+      console.log(`${fileType.toUpperCase()} file saved successfully`);
+    } catch (err) {
+      console.error(`Error saving ${fileType} file:`, err);
+      setError(`Error saving ${fileType.toUpperCase()} file to backend: ${err.message}`);
+    }
+  };
   return (
     <div className={`flex flex-col min-h-screen ${containerClasses}`}>
       <Navbar isDark={isDark} setIsDark={setIsDark} dashboardType="mri" role={role} />
       <div className="flex flex-1">
         <aside className={`${sideBarClasses} w-72 p-6 shadow-lg rounded-r-lg`}>
-          <div className="mb-6">
-            <h2 className="text-lg font-bold mb-2">Open Brain T1 MRI</h2>
-            <p className={`text-sm ${textSecondary} mb-4`}>Select input file to Browse</p>
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed ${isDark ? "border-gray-600" : "border-gray-400"} p-6 rounded-lg text-center cursor-pointer transition-all duration-300 ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"}`}
-            >
-              <input {...getInputProps()} />
-              <p className={`text-sm ${textPrimary}`}>Browse / Drop file</p>
-            </div>
-            {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
-          </div>
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-2">Input Type</h2>
             <div>
@@ -212,8 +303,20 @@ function MRIDasboard() {
               <select
                 id="inputType"
                 value={selectedInputType}
-                onChange={(e) => setSelectedInputType(e.target.value)}
-                className="w-full p-2 border rounded"
+                onChange={(e) => {
+                  setSelectedInputType(e.target.value);
+                  // Reset files when input type changes
+                  setT1ceFile(null);
+                  setFlairFile(null);
+                  setImageSrc(null);
+                  setT1ceFileName("");
+                  setFlairFileName("");
+                  setIsRendered(false);
+                }}
+                className={`w-full p-2 border rounded ${isDark
+                    ? "bg-gray-700 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-gray-800"
+                  }`}
               >
                 <option value="">--Select Input Type--</option>
                 <option value="nii.gz">NIfTI GZ (.nii.gz)</option>
@@ -221,6 +324,92 @@ function MRIDasboard() {
               </select>
             </div>
           </div>
+
+          {selectedInputType === "nii.gz" && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-lg font-bold mb-2">Upload T1CE MRI</h2>
+                <div
+                  {...getT1ceRootProps()}
+                  className={`border-2 border-dashed ${isDark ? "border-gray-600" : "border-gray-400"
+                    } p-6 rounded-lg text-center cursor-pointer transition-all duration-300 ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    }`}
+                >
+                  <input {...getT1ceInputProps()} />
+                  <p className={`text-sm ${textPrimary}`}>
+                    Browse / Drop T1CE file
+                  </p>
+                </div>
+                {t1ceFileName && (
+                  <div className="mt-2 text-sm text-green-500">
+                    T1CE uploaded: {t1ceFileName}
+                  </div>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <h2 className="text-lg font-bold mb-2">Upload FLAIR MRI</h2>
+                <div
+                  {...getFlairRootProps()}
+                  className={`border-2 border-dashed ${isDark ? "border-gray-600" : "border-gray-400"
+                    } p-6 rounded-lg text-center cursor-pointer transition-all duration-300 ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                    }`}
+                >
+                  <input {...getFlairInputProps()} />
+                  <p className={`text-sm ${textPrimary}`}>
+                    Browse / Drop FLAIR file
+                  </p>
+                </div>
+                {flairFileName && (
+                  <div className="mt-2 text-sm text-green-500">
+                    FLAIR uploaded: {flairFileName}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {selectedInputType === "image" && (
+            <div className="mb-6">
+              <h2 className="text-lg font-bold mb-2">Upload Image</h2>
+              <div
+                {...getImageRootProps()}
+                className={`border-2 border-dashed ${isDark ? "border-gray-600" : "border-gray-400"
+                  } p-6 rounded-lg text-center cursor-pointer transition-all duration-300 ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
+              >
+                <input {...getImageInputProps()} />
+                <p className={`text-sm ${textPrimary}`}>
+                  Browse / Drop image file
+                </p>
+              </div>
+            </div>
+          )}
+
+          {error && <p className="mt-2 text-red-500 text-sm">{error}</p>}
+
+          {selectedInputType === "nii.gz" && t1ceFile && flairFile && !isRendered && (
+            <>
+              <div className="mb-4">
+                <label className="block text-sm mb-2">Select Image to Render</label>
+                <select
+                  className={`w-full p-2 border rounded ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-800"}`}
+                  value={selectedImageType}
+                  onChange={(e) => setSelectedImageType(e.target.value)}
+                >
+                  <option value="t1ce">T1CE</option>
+                  <option value="flair">FLAIR</option>
+                </select>
+              </div>
+              <button
+                onClick={handleRender}
+                className="mt-4 w-full py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded transition-all duration-300"
+              >
+                Render Image
+              </button>
+            </>
+          )}
+
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-2">Segmentation Options</h2>
             <div>
@@ -262,6 +451,7 @@ function MRIDasboard() {
               Save
             </button>
           </div>
+          
         </aside>
         <main className="flex-1 p-6">
           {selectedInputType === "nii.gz" ? (

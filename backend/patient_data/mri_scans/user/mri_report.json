@@ -1,0 +1,27 @@
+{
+    "mri_details": {
+        "dimensions": [
+            240,
+            240,
+            155
+        ],
+        "voxel_size": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "slice_thickness": "1.0mm",
+        "data_type": "int16",
+        "description": ""
+    },
+    "prediction_details": {
+        "affected_percentage": {
+            "necrotic_tissue_volume": "0.20%",
+            "edema_volume": "1.54%",
+            "enhancing_tumor_volume": "0.30%"
+        },
+        "abnormalities_detected": true
+    },
+    "segmentation_file": "./patient_data/mri_scans/user\\segmentation_output.nii.gz",
+    "t1ce_file": "test_t1ce_t1ce.nii.gz"
+}
