@@ -15,6 +15,8 @@ import json
 router = APIRouter()
 
 load_dotenv()
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 MODEL_PATH = os.getenv("MODEL_PATH")
 
 def dice_coef(y_true, y_pred, smooth=1.0):

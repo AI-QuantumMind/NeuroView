@@ -31,3 +31,4 @@ backend/VisionModel/report/*
 !backend/VisionModel/report/.gitkeep
 *.md
 *.pdf
+backend/patient/*
