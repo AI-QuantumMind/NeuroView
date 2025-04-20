@@ -17,6 +17,8 @@ from VisionModel.yolo_api import router as yolo_router
 # -----------------------
 # Load environment variables
 # -----------------------
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key")
@@ -127,7 +129,7 @@ class PatientBase(BaseModel):
     phone: str
     email: EmailStr
     address: str
-    report_id: List[str]=[]
+    report_ids:List[str]=[]
 
 class PatientCreate(PatientBase):
     password: str

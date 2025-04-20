@@ -173,7 +173,7 @@ def get_doctor_details(doctor_id):
 
 def report_generation(data_json,patient_id,doctor_id):
     """
-    Generates a medical report in Markdown format using the provided JSON data.
+    Generates a medical report in html format using the provided JSON data.
     """
 
     patient_details=get_patient_details(patient_id)
@@ -190,14 +190,14 @@ def report_generation(data_json,patient_id,doctor_id):
     
     response = llm.complete(
         f"""
-        Follow the following steps to generate a report in markdown format: {template} 
+        Follow the following steps to generate a report in html format and start with : {template} 
         
         Here's the data required in JSON format: {data_json}
         """
     )
     
     response_text = response.text
-    start_delimiter = "```markdown"
+    start_delimiter = "```html"
     end_delimiter = "```"
     start_index = response_text.find(start_delimiter) + len(start_delimiter)
     end_index = response_text.rfind(end_delimiter)
