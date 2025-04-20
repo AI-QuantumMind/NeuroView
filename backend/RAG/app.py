@@ -57,8 +57,7 @@ async def generate_report(request: ReportRequest):
             "patient_id": request.patient_id,
             "doctor_id": request.doctor_id,
             "html_path": report_filename,
-            "timestamp": timestamp,
-            "generated_at": datetime.utcnow()
+            "timestamp": datetime.utcnow(),
         }
         result = await db.reports.insert_one(report_document)
         new_report_id = str(result.inserted_id)

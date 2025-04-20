@@ -5,6 +5,8 @@ import { Moon, Sun } from "lucide-react";
 import { useDropzone } from "react-dropzone";
 import { Brain } from "lucide-react";
 import Navbar from "./components/Navbar";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function MRIDasboard() {
   const mriCanvasRef = useRef(null);
@@ -20,6 +22,10 @@ function MRIDasboard() {
   const [labelName, setLabelName] = useState("labels.nii.gz");
   const [selectedInputType, setSelectedInputType] = useState("");
   const [isDark, setIsDark] = useState(false);
+  const [patients, setPatients] = useState([]);
+  const [selectedPatient, setSelectedPatient] = useState("");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [reportStatus, setReportStatus] = useState("");
   const role = localStorage.getItem("role");
   const AI_MODELS = [
     { id: "tumor-seg-v1", name: "Tumor Segmentation v1" },
@@ -52,6 +58,32 @@ function MRIDasboard() {
       setMriNv(nv);
     }
   }, [mriCanvasRef, mriNv, niivueBgColor, selectedInputType]);
+  useEffect(() => {
+    const fetchPatients = async () => {
+      try {
+        const doctorId = localStorage.getItem("userId");
+        const response = await fetch(
+          `http://localhost:8000/api/doctor/${doctorId}/patients`
+        );
+        if (!response.ok) throw new Error("Failed to fetch patients");
+        const data = await response.json();
+        // Ensure each patient has report_ids initialized
+        const patientsWithReportIds = data.map((patient) => ({
+          ...patient,
+          report_ids: patient.report_ids || [], // Initialize if missing
+        }));
+        setPatients(patientsWithReportIds);
+      } catch (err) {
+        console.error("Error fetching patients:", err);
+        setError(err.message);
+      }
+    };
+
+    if (role === "doctor") {
+      fetchPatients();
+    }
+  }, [role]);
+
   useEffect(() => {
     if (
       labelsCanvasRef.current &&
@@ -196,6 +228,77 @@ function MRIDasboard() {
     }
     alert(`Saving labels as "${labelName}" (simulate).`);
   };
+  const handleGenerateReport = async () => {
+    if (!selectedPatient) {
+      setError("Please select a patient");
+      toast.error("Please select a patient");
+      return;
+    }
+
+    setIsGeneratingReport(true);
+    setReportStatus("");
+
+    try {
+      const doctorId = localStorage.getItem("userId");
+      const response = await fetch("http://localhost:8000/rag/report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          patient_id: selectedPatient,
+          doctor_id: doctorId,
+          data_json: {
+            details: {
+              dimensions: [240, 240, 155],
+              voxel_size: [1.0, 1.0, 1.0],
+              slice_thickness: "1.0mm",
+              data_type: "int16",
+              description: "",
+            },
+            prediction_insights: {
+              affected_percentage: {
+                necrotic_tissue_volume: "0.13%",
+                edema_volume: "0.02%",
+                enhancing_tumor_volume: "0.26%",
+              },
+              abnormalities_detected: true,
+            },
+            segmentation_file: "output_prediction.nii.gz",
+          },
+        }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.detail || `Report generation failed: ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+      toast.success(`Report generated successfully!`);
+
+      setPatients((prev) =>
+        prev.map((p) =>
+          p._id === selectedPatient
+            ? {
+                ...p,
+                report_ids: Array.isArray(p.report_ids)
+                  ? [...p.report_ids, data.report_id]
+                  : [data.report_id],
+              }
+            : p
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+      toast.error(err.message);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
   return (
     <div className={`flex flex-col min-h-screen ${containerClasses}`}>
       <Navbar
@@ -274,6 +377,44 @@ function MRIDasboard() {
             >
               {isProcessing ? "Running..." : "Run"}
             </button>
+          </div>
+          <div className="mt-6">
+            <h2 className="text-lg font-bold mb-2">Report Generation</h2>
+            <div className="mb-4">
+              <label className="block text-sm mb-2">Select Patient</label>
+              <select
+                className={`w-full p-2 border rounded ${
+                  isDark
+                    ? "bg-gray-700 border-gray-600"
+                    : "bg-white border-gray-300"
+                }`}
+                value={selectedPatient}
+                onChange={(e) => setSelectedPatient(e.target.value)}
+              >
+                <option value="">-- Select Patient --</option>
+                {patients.map((patient) => (
+                  <option key={patient._id} value={patient._id}>
+                    {patient.name} ({patient.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={handleGenerateReport}
+              disabled={!selectedPatient || isGeneratingReport}
+              className={`w-full py-2 text-white rounded ${
+                isGeneratingReport
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-purple-500 hover:bg-purple-600"
+              } transition-all duration-300`}
+            >
+              {isGeneratingReport
+                ? "Generating Report..."
+                : "Generate & Assign Report"}
+            </button>
+            {reportStatus && (
+              <p className="mt-2 text-sm text-green-500">{reportStatus}</p>
+            )}
           </div>
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-2">Save Labels</h2>
@@ -364,6 +505,18 @@ function MRIDasboard() {
           )}
         </main>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={isDark ? "dark" : "light"}
+      />
     </div>
   );
 }
