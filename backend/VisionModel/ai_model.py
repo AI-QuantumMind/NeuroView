@@ -125,15 +125,14 @@ async def predict_mri(file: UploadFile = File(...)):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".nii.gz") as temp_file:
         temp_file.write(await file.read())
         temp_file_path = temp_file.name
-
     nifti_image = nib.load(temp_file_path)
+
     processed_image = preprocess_image(nifti_image)
     prediction = predict(processed_image)
     segmentation = np.argmax(prediction, axis=-1)
     
     output_file_path = "./VisionModel/report/output_prediction.nii.gz"
     save_nifti(segmentation, output_file_path)
-
     mri_details = extract_mri_details(nifti_image)
     prediction_details = extract_prediction_details(segmentation)
 

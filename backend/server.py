@@ -28,7 +28,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # Use ["*"] to allow all origins (not recommended for production)
+    allow_origins=["http://localhost:5173"],      # Use ["*"] to allow all origins (not recommended for production)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,6 +127,7 @@ class PatientBase(BaseModel):
     phone: str
     email: EmailStr
     address: str
+    report_id: List[str]=[]
 
 class PatientCreate(PatientBase):
     password: str
@@ -237,6 +238,18 @@ async def monitor_patient(
 
     # Return success message
     return {"message": "Patient monitored and medication added successfully"}
+
+@app.get("/doctor/patients/", response_model=List[MonitoredPatient])
+async def get_doctor_patients(doctor_id: str):
+    """
+    Get all patients monitored by a specific doctor
+    """
+    doctor = await db.doctors.find_one({"_id": ObjectId(doctor_id)})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    
+    # Return the list of monitored patients
+    return doctor.get("patients_monitored", [])
 # Patients API
 
 # Create a new patient
@@ -342,12 +355,14 @@ async def signin(data: SigninModel):
     
     return {"message": f"Login successful as {role}", "token": token, "role": role,"id":user_id}
 
+
 app.include_router(ai_router, prefix="/ai")
 app.include_router(yolo_router, prefix="/yolo")
+
 # -----------------------
 # Include the RAG routes
 # -----------------------
-app.include_router(route_rag)
+app.include_router(route_rag,prefix="/rag")
 
 # -----------------------
 # Run the application

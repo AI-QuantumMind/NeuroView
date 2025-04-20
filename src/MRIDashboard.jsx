@@ -23,7 +23,7 @@ function MRIDasboard() {
   const role = localStorage.getItem("role");
   const AI_MODELS = [
     { id: "tumor-seg-v1", name: "Tumor Segmentation v1" },
-    { id: "tumor-seg-v2", name: "Tumor Segmentation v2" }
+    { id: "tumor-seg-v2", name: "Tumor Segmentation v2" },
   ];
   const containerClasses = isDark
     ? "bg-gray-900 text-gray-100"
@@ -46,19 +46,23 @@ function MRIDasboard() {
         backColor: niivueBgColor,
         show3Dcrosshair: true,
         isColorbar: false,
-        isCornerOrientationText: true
+        isCornerOrientationText: true,
       });
       nv.attachToCanvas(mriCanvasRef.current);
       setMriNv(nv);
     }
   }, [mriCanvasRef, mriNv, niivueBgColor, selectedInputType]);
   useEffect(() => {
-    if (labelsCanvasRef.current && !labelsNv && selectedInputType === "nii.gz") {
+    if (
+      labelsCanvasRef.current &&
+      !labelsNv &&
+      selectedInputType === "nii.gz"
+    ) {
       const nv = new Niivue({
         backColor: niivueBgColor,
         show3Dcrosshair: true,
         isColorbar: false,
-        isCornerOrientationText: true
+        isCornerOrientationText: true,
       });
       nv.attachToCanvas(labelsCanvasRef.current);
       setLabelsNv(nv);
@@ -94,18 +98,18 @@ function MRIDasboard() {
                 url: arrayBuffer,
                 name: file.name,
                 colorMap: "gray",
-                opacity: 1.0
-              }
+                opacity: 1.0,
+              },
             ]);
           }
         } catch (err) {
           console.error(err);
-          setError("Error loading the file. Make sure it's a valid NIfTI file.");
+          setError(
+            "Error loading the file. Make sure it's a valid NIfTI file."
+          );
         }
       } else {
-        if (
-          !file.name.match(/\.(jpg|jpeg|png)$/i)
-        ) {
+        if (!file.name.match(/\.(jpg|jpeg|png)$/i)) {
           setError("Please upload a valid image file (.jpg, .jpeg, .png)");
           return;
         }
@@ -119,8 +123,8 @@ function MRIDasboard() {
       "application/gzip": [".nii.gz"],
       "application/octet-stream": [".nii"],
       "image/jpeg": [".jpg", ".jpeg"],
-      "image/png": [".png"]
-    }
+      "image/png": [".png"],
+    },
   });
   const handleInference = async () => {
     if ((!volumeFile && !imageSrc) || !selectedModel) {
@@ -132,7 +136,9 @@ function MRIDasboard() {
     try {
       const formData = new FormData();
       if (selectedInputType === "nii.gz") {
-        const fileBlob = new Blob([volumeFile], { type: "application/octet-stream" });
+        const fileBlob = new Blob([volumeFile], {
+          type: "application/octet-stream",
+        });
         formData.append("file", fileBlob, "mri_volume.nii.gz");
       } else {
         const response = await fetch(imageSrc);
@@ -142,36 +148,38 @@ function MRIDasboard() {
       formData.append("model", selectedModel);
       const endpoint =
         selectedModel === "tumor-seg-v1"
-          ? "http://localhost:8000/ai/predict"
-          : "http://localhost:8000/yolo/predict";
+          ? "http://localhost:8000/ai/predict/"
+          : "http://localhost:8000/yolo/predict/";
       const response = await fetch(endpoint, {
         method: "POST",
         body: formData,
-        credentials: "include"
+        credentials: "include",
       });
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || `Server error: ${response.status}`);
-        console.log(response)
+        console.log(response);
       }
+
       const data = await response.json();
-      console.log(data)
+      console.log(data);
       if (selectedModel === "tumor-seg-v1") {
         if (labelsNv) {
           await labelsNv.loadVolumes([
             {
-              url: data.segmentation_file.path,
+              url: "backend/VisionModel/report/output_prediction.nii.gz",
               colorMap: "summer",
-              opacity: 0.5
+              opacity: 0.5,
             },
             {
               url: volumeFile,
               colorMap: "gray",
-              opacity: .5
-            }
+              opacity: 0.5,
+            },
           ]);
         }
       } else {
+        console.log(path);
         setResultImage(data.result.path);
       }
     } catch (err) {
@@ -190,15 +198,26 @@ function MRIDasboard() {
   };
   return (
     <div className={`flex flex-col min-h-screen ${containerClasses}`}>
-      <Navbar isDark={isDark} setIsDark={setIsDark} dashboardType="mri" role={role} />
+      <Navbar
+        isDark={isDark}
+        setIsDark={setIsDark}
+        dashboardType="mri"
+        role={role}
+      />
       <div className="flex flex-1">
         <aside className={`${sideBarClasses} w-72 p-6 shadow-lg rounded-r-lg`}>
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-2">Open Brain T1 MRI</h2>
-            <p className={`text-sm ${textSecondary} mb-4`}>Select input file to Browse</p>
+            <p className={`text-sm ${textSecondary} mb-4`}>
+              Select input file to Browse
+            </p>
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed ${isDark ? "border-gray-600" : "border-gray-400"} p-6 rounded-lg text-center cursor-pointer transition-all duration-300 ${isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"}`}
+              className={`border-2 border-dashed ${
+                isDark ? "border-gray-600" : "border-gray-400"
+              } p-6 rounded-lg text-center cursor-pointer transition-all duration-300 ${
+                isDark ? "hover:bg-gray-700" : "hover:bg-gray-100"
+              }`}
             >
               <input {...getInputProps()} />
               <p className={`text-sm ${textPrimary}`}>Browse / Drop file</p>
@@ -208,7 +227,9 @@ function MRIDasboard() {
           <div className="mb-6">
             <h2 className="text-lg font-bold mb-2">Input Type</h2>
             <div>
-              <label htmlFor="inputType" className="block text-sm mb-2">Input Type</label>
+              <label htmlFor="inputType" className="block text-sm mb-2">
+                Input Type
+              </label>
               <select
                 id="inputType"
                 value={selectedInputType}
@@ -226,7 +247,11 @@ function MRIDasboard() {
             <div>
               <label className="block text-sm mb-2">Model</label>
               <select
-                className={`w-full p-2 border rounded ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-800"}`}
+                className={`w-full p-2 border rounded ${
+                  isDark
+                    ? "bg-gray-700 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-gray-800"
+                }`}
                 value={selectedModel}
                 onChange={(e) => setSelectedModel(e.target.value)}
               >
@@ -241,7 +266,11 @@ function MRIDasboard() {
             <button
               onClick={handleInference}
               disabled={isProcessing}
-              className={`mt-4 w-full py-2 text-white rounded ${isProcessing ? "bg-blue-300 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"} transition-all duration-300`}
+              className={`mt-4 w-full py-2 text-white rounded ${
+                isProcessing
+                  ? "bg-blue-300 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600"
+              } transition-all duration-300`}
             >
               {isProcessing ? "Running..." : "Run"}
             </button>
@@ -251,7 +280,11 @@ function MRIDasboard() {
             <label className="block text-sm mb-2">Name</label>
             <input
               type="text"
-              className={`w-full p-2 border rounded mb-4 ${isDark ? "bg-gray-700 border-gray-600 text-white" : "bg-white border-gray-300 text-gray-800"}`}
+              className={`w-full p-2 border rounded mb-4 ${
+                isDark
+                  ? "bg-gray-700 border-gray-600 text-white"
+                  : "bg-white border-gray-300 text-gray-800"
+              }`}
               value={labelName}
               onChange={(e) => setLabelName(e.target.value)}
             />
@@ -266,39 +299,65 @@ function MRIDasboard() {
         <main className="flex-1 p-6">
           {selectedInputType === "nii.gz" ? (
             <div className="grid grid-cols-2 gap-6 h-full">
-              <div className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}>
+              <div
+                className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}
+              >
                 <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-200 dark:border-gray-700">
                   <span className="font-semibold">MRI Viewer</span>
                 </div>
                 <div className="relative flex-1 border rounded-lg dark:border-gray-700">
-                  <canvas ref={mriCanvasRef} className="absolute top-0 left-0 w-full h-full" />
+                  <canvas
+                    ref={mriCanvasRef}
+                    className="absolute top-0 left-0 w-full h-full"
+                  />
                 </div>
               </div>
-              <div className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}>
+              <div
+                className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}
+              >
                 <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-200 dark:border-gray-700">
                   <span className="font-semibold">Labels Viewer</span>
                 </div>
                 <div className="relative flex-1 border rounded-lg dark:border-gray-700">
-                  <canvas ref={labelsCanvasRef} className="absolute top-0 left-0 w-full h-full" />
+                  <canvas
+                    ref={labelsCanvasRef}
+                    className="absolute top-0 left-0 w-full h-full"
+                  />
                 </div>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-6 h-full">
-              <div className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}>
+              <div
+                className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}
+              >
                 <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-200 dark:border-gray-700">
                   <span className="font-semibold">Input Image</span>
                 </div>
                 <div className="relative flex-1 border rounded-lg dark:border-gray-700 flex items-center justify-center">
-                  {imageSrc && <img src={imageSrc} alt="Input" className="max-h-full max-w-full" />}
+                  {imageSrc && (
+                    <img
+                      src={imageSrc}
+                      alt="Input"
+                      className="max-h-full max-w-full"
+                    />
+                  )}
                 </div>
               </div>
-              <div className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}>
+              <div
+                className={`${viewerBgClasses} shadow-lg rounded-lg p-4 flex flex-col`}
+              >
                 <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-200 dark:border-gray-700">
                   <span className="font-semibold">Result Image</span>
                 </div>
                 <div className="relative flex-1 border rounded-lg dark:border-gray-700 flex items-center justify-center">
-                  {resultImage && <img src={resultImage} alt="Result" className="max-h-full max-w-full" />}
+                  {resultImage && (
+                    <img
+                      src={resultImage}
+                      alt="Result"
+                      className="max-h-full max-w-full"
+                    />
+                  )}
                 </div>
               </div>
             </div>
