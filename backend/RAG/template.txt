@@ -81,7 +81,7 @@
 
   <div class="container">
     <div>
-        <img src="./RAG/medical_icon.png" alt="Medical Icon" style="width: 50px; height: auto;"> #TODO : chcange icon path
+        <img src="https://t3.ftcdn.net/jpg/05/14/36/48/360_F_514364850_xLOQX6SOY2qcjAIcTowsi3xYvHmhmvs0.jpg" alt="Medical Icon" style="width: 50px; height: auto;"> #TODO : chcange icon path
     </div>
     <div class="hospital-name">[Hospital Name]</div>
 
@@ -135,6 +135,10 @@
       <p>
         Summarize the main diagnosis or differential considerations based on findings. If no abnormalities are found, explicitly state that the MRI is unremarkable. List possible differential diagnoses if necessary. Recommend further investigations (e.g., follow-up imaging, biopsy, lab tests) if needed. Advise clinical correlation with patient symptoms and history.
       </p>
+    </div>
+    <div style="color: crimson;">
+      
+      Note : This is an AI generated report
     </div>
   </div>
 
