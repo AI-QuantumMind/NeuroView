@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timedelta
 from typing import List, Optional
-
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, EmailStr, Field
@@ -17,6 +17,8 @@ from VisionModel.yolo_api import router as yolo_router
 # -----------------------
 # Load environment variables
 # -----------------------
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 load_dotenv()
 MONGO_URI = os.getenv("MONGO_URI")
 SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key")
@@ -25,10 +27,10 @@ SECRET_KEY = os.getenv("SECRET_KEY", "your_secret_key")
 # Setup FastAPI and Database
 # -----------------------
 app = FastAPI()
-
+app.mount("/patient", StaticFiles(directory="patient"), name="patient")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # Use ["*"] to allow all origins (not recommended for production)
+    allow_origins=["http://localhost:5173"],      # Use ["*"] to allow all origins (not recommended for production)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -127,6 +129,7 @@ class PatientBase(BaseModel):
     phone: str
     email: EmailStr
     address: str
+    report_ids:List[str]=[]
 
 class PatientCreate(PatientBase):
     password: str
@@ -184,6 +187,28 @@ async def get_doctor_by_id(id: str):
     doctor["_id"] = str(doctor["_id"])
     return doctor
 
+# get the Assigned patients
+@app.get("/api/doctor/{doctor_id}/patients")
+async def get_doctor_patients(doctor_id: str):
+    try:
+        doctor = await db.doctors.find_one({"_id": ObjectId(doctor_id)})
+        if not doctor:
+            raise HTTPException(status_code=404, detail="Doctor not found")
+        
+        # Extract monitored patients with their details
+        patients = []
+        for monitored in doctor.get("patients_monitored", []):
+            patient = await db.patients.find_one({"_id": ObjectId(monitored["patient_id"])})
+            if patient:
+                patients.append({
+                    "_id": str(patient["_id"]),
+                    "name": patient["name"],
+                    "email": patient["email"]
+                })
+        
+        return patients
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 # update or assigns doctor to patient and patients to doctor
 @app.post("/doctors/{doctor_id}/monitor-patient/{patient_id}")
 async def monitor_patient(
@@ -237,6 +262,18 @@ async def monitor_patient(
 
     # Return success message
     return {"message": "Patient monitored and medication added successfully"}
+
+@app.get("/doctor/patients/", response_model=List[MonitoredPatient])
+async def get_doctor_patients(doctor_id: str):
+    """
+    Get all patients monitored by a specific doctor
+    """
+    doctor = await db.doctors.find_one({"_id": ObjectId(doctor_id)})
+    if not doctor:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    
+    # Return the list of monitored patients
+    return doctor.get("patients_monitored", [])
 # Patients API
 
 # Create a new patient
@@ -262,6 +299,61 @@ async def get_patient_by_id(id: str):
     patient["_id"] = str(patient["_id"])
     return patient
 
+
+# Mount a static directory for reports
+app.mount("/reports", StaticFiles(directory="patient"), name="reports")
+
+@app.get("/api/report/{report_id}")
+async def get_report(report_id: str):
+    try:
+        report = await db.reports.find_one({"_id": ObjectId(report_id)})
+        if not report:
+            raise HTTPException(status_code=404, detail="Report not found")
+        
+        # Return the report data including the URL to access it
+        return {
+            "id": str(report["_id"]),
+            "name": report.get("name", "Medical Report"),
+            "date": report.get("timestamp", ""),
+            "doctor_id": report.get("doctor_id", ""),
+            "report_url": f"/reports/{report['html_path'].split('patient/')[-1]}"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Add this to your FastAPI app
+@app.get("/api/patient/{patient_id}/reports")
+async def get_patient_reports(patient_id: str):
+    try:
+        # Fetch the patient to verify they exist
+        patient = await db.patients.find_one({"_id": ObjectId(patient_id)})
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        # Fetch all reports for this patient
+        reports = []
+        for report_id in patient.get("report_ids", []):
+            report = await db.reports.find_one({"_id": ObjectId(report_id)})
+            if report:
+                reports.append({
+                    "id": str(report["_id"]),
+                    "name": report.get("name", "Medical Report"),
+                    "date": report.get("timestamp", ""),
+                    "doctor_id": report.get("doctor_id", ""),
+                    "html_path": report.get("html_path", "")
+                })
+        
+        # Get doctor names for each report
+        for report in reports:
+            if report["doctor_id"]:
+                doctor = await db.doctors.find_one({"_id": ObjectId(report["doctor_id"])})
+                if doctor:
+                    report["doctor_name"] = doctor.get("name", "Unknown Doctor")
+        
+        return reports
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 
 @app.put("/patients/{id}/medical-records", response_model=PatientOut)
 async def update_medical_records(id: str, medical_records: List[MedicalRecord]):
@@ -344,10 +436,11 @@ async def signin(data: SigninModel):
 
 app.include_router(ai_router, prefix="")
 app.include_router(yolo_router, prefix="/yolo")
+
 # -----------------------
 # Include the RAG routes
 # -----------------------
-app.include_router(route_rag)
+app.include_router(route_rag,prefix="/rag")
 
 # -----------------------
 # Run the application

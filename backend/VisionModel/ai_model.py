@@ -15,6 +15,8 @@ import json
 router = APIRouter()
 
 load_dotenv()
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 MODEL_PATH = os.getenv("MODEL_PATH")
 
 # Create base directory for patient data

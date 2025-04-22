@@ -5,7 +5,7 @@ import AddPatientPopup from "../components/AddPatientPopup"; // New component
 import PatientDetailsPopup from "../components/PatientDetailsPopup"; // New component
 import MedicationsPopup from "../components/MedicationsPopup"; // New component
 import { FaPills, FaPlusCircle, FaPaperclip, FaEye } from "react-icons/fa"; // Import icons from react-icons
-
+import ReportsPopup from "../components/ReportsPopUp";
 const DoctorProfile = ({ isDark, setIsDark }) => {
   // Accept isDark and setIsDark as props
   const [doctor, setDoctor] = useState(null);
@@ -16,6 +16,8 @@ const DoctorProfile = ({ isDark, setIsDark }) => {
   const [isAddPatientFormOpen, setIsAddPatientFormOpen] = useState(false); // For displaying the add patient form
   const [isPatientDetailsOpen, setIsPatientDetailsOpen] = useState(false); // For displaying patient details
   const [isMedicationsPopupOpen, setIsMedicationsPopupOpen] = useState(false); // For displaying medications
+  const [isReportsPopupOpen, setIsReportsPopupOpen] = useState(false);
+  const [patientReports, setPatientReports] = useState([]);
 
   // Get the doctor's ID from localStorage
   const userId = localStorage.getItem("userId");
@@ -39,6 +41,30 @@ const DoctorProfile = ({ isDark, setIsDark }) => {
 
     fetchDoctor();
   }, [userId]);
+
+  const handleViewReports = async (patientId) => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/patient/${patientId}/reports`
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch reports");
+      }
+      const data = await response.json();
+      setPatientReports(data);
+      setIsReportsPopupOpen(true);
+    } catch (error) {
+      console.error("Error fetching reports:", error);
+    }
+  };
+
+  const handleSelectReport = (report) => {
+    // Open the report in a new tab
+    window.open(
+      `http://127.0.0.1:8000${report.html_path.replace("./", "/")}`,
+      "_blank"
+    );
+  };
 
   // Handle adding medication for a monitored patient
   const handleAddMedication = async (medication) => {
@@ -236,18 +262,18 @@ const DoctorProfile = ({ isDark, setIsDark }) => {
                   </div>
                   <div className="flex items-center gap-2">
                     {/* Attach Report Button */}
-                    <button
+                    {/*<button
                       onClick={() => {}}
                       className="p-2 text-blue-500 hover:text-blue-600"
                       title="Attach Report"
                     >
                       <FaPaperclip />
-                    </button>
+                    </button>*/}
                     {/* View Report Button */}
                     <button
-                      onClick={() => {}}
+                      onClick={() => handleViewReports(patient.patient_id)}
                       className="p-2 text-purple-500 hover:text-purple-600"
-                      title="View Report"
+                      title="View Reports"
                     >
                       <FaEye />
                     </button>
@@ -317,6 +343,14 @@ const DoctorProfile = ({ isDark, setIsDark }) => {
           medications={selectedPatient.medications_given || []}
           onClose={() => setIsMedicationsPopupOpen(false)}
           isDark={isDark}
+        />
+      )}
+      {isReportsPopupOpen && (
+        <ReportsPopup
+          reports={patientReports}
+          onClose={() => setIsReportsPopupOpen(false)}
+          isDark={isDark}
+          onSelectReport={handleSelectReport}
         />
       )}
     </div>

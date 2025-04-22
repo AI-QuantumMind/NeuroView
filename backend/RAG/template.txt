@@ -1,69 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MRI Test Report</title>
+  <style>
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      background-color: #f4f7fa;
+      color: #2c3e50;
+      margin: 0;
+      padding: 40px;
+    }
 
-**Prompt:**  
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: #ffffff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+    }
 
-You are a highly skilled radiologist generating a structured and professional MRI report based on provided medical data. Strictly adhere to the following formatting and content guidelines:  
+    .hospital-name {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: center;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 10px;
+    }
 
----
+    h3 {
+      color: #2980b9;
+      margin-top: 40px;
+      border-left: 6px solid #3498db;
+      padding-left: 15px;
+      font-size: 22px;
+    }
 
-### **MRI Test Report**  
+    p {
+      margin: 10px 0;
+      font-size: 16px;
+    }
 
-[Hospital Name  in quite bold]  
+    .label {
+      font-weight: 600;
+      color: #34495e;
+    }
 
-#### **Patient Details**  
- 
-- Name: [Patient Full Name]  
-- Age: [Patient Age]  
-- Gender: [Patient Gender]  
-- Patient ID: [Unique ID]  
-- Contact: [Phone Number]  
-- Relevant Medical History: [Mention if available]  
-- Emergency Contact: [Mention if available]  
+    .section {
+      margin-bottom: 30px;
+    }
 
-#### **Referring Physician**  
- 
-- Name: [Doctor’s Full Name]  
-- Credentials: [MD, Radiologist, etc.]  
-- Medical License Number: [License Number if available]  
-- Date & Time of Report: [Keep it blank]  
+    .content {
+      display: inline;
+    }
 
-#### **Exam Details**  
-- Exam Type: [Specify MRI Scan Type]  
-- Body Part Examined: [Brain, Spine, Knee, etc.]  
-- Patient Positioning: [Supine, Prone, etc.]  
-- Use of Contrast: [Mention if contrast was administered]  
-- Slice Thickness: [Mention details if provided]  
-- Anatomical Landmarks: [Include relevant details]  
-- Any deviations from standard protocols: [If applicable]  
-- Patient Preparation Notes: [If applicable]  
+    .note {
+      font-style: italic;
+      color: #7f8c8d;
+      font-size: 15px;
+      margin-top: 5px;
+    }
 
-Clinical Indications (How to Write)
-Clearly describe why the MRI was conducted.
-Mention patient symptoms that led to the MRI request.
-Incorporate relevant medical history and prior test results if applicable.
-State the purpose of the MRI scan (e.g., ruling out a specific condition, assessing an abnormality).
-If no contraindications exist, state that explicitly.
+    @media print {
+      body {
+        background-color: white;
+        padding: 0;
+      }
+      .container {
+        box-shadow: none;
+        padding: 20px;
+        margin: 0;
+      }
+    }
+  </style>
+</head>
+<body>
 
-Imaging Findings (How to Write)
-Provide a systematic description of normal and abnormal structures observed.
-Clearly describe any abnormalities, such as lesions, masses, edema, or herniation.
-Include measurements if applicable (e.g., tumor size, area of edema).
-State the condition of surrounding structures and whether they are affected.
-Mention any incidental findings detected during the scan.
+  <div class="container">
+    <div>
+        <img src="https://t3.ftcdn.net/jpg/05/14/36/48/360_F_514364850_xLOQX6SOY2qcjAIcTowsi3xYvHmhmvs0.jpg" alt="Medical Icon" style="width: 50px; height: auto;"> #TODO : chcange icon path
+    </div>
+    <div class="hospital-name">[Hospital Name]</div>
 
-Impressions (How to Write)
-Summarize the main diagnosis or differential considerations based on findings.
-If no abnormalities are found, explicitly state that the MRI is unremarkable.
-List possible differential diagnoses if necessary.
-Recommend further investigations (e.g., follow-up imaging, biopsy, lab tests) if needed.
-Advise clinical correlation with patient symptoms and history.
----
+    <div class="section">
+      <h3>Patient Details</h3>
+      <p><span class="label">Name:</span> <span class="content">[Patient Full Name]</span></p>
+      <p><span class="label">Age:</span> <span class="content">[Patient Age]</span></p>
+      <p><span class="label">Gender:</span> <span class="content">[Patient Gender]</span></p>
+      <p><span class="label">Patient ID:</span> <span class="content">[Unique ID]</span></p>
+      <p><span class="label">Contact:</span> <span class="content">[Phone Number]</span></p>
+      <p><span class="label">Relevant Medical History:</span> <span class="content">[Mention if available]</span></p>
+      <p><span class="label">Emergency Contact:</span> <span class="content">[Mention if available]</span></p>
+    </div>
 
-**Guidelines for the LLM:**  
-- Generate a well-structured, coherent, and professional MRI report using full sentences, avoiding bullet points or JSON-style formatting.  
-- Do not hallucinate or assume any medical findings. If information is unavailable, leave that section blank.  
-- Ensure medical terminology and descriptions are clinically accurate.  
-- Follow a formal tone suitable for a radiology report.  
-- Maintain consistency in formatting and ensure clarity in presenting findings.  
+    <div class="section">
+      <h3>Referring Physician</h3>
+      <p><span class="label">Name:</span> <span class="content">[Doctor’s Full Name]</span></p>
+      <p><span class="label">Credentials:</span> <span class="content">[MD, Radiologist, etc.]</span></p>
+      <p><span class="label">Medical License Number:</span> <span class="content">[License Number if available]</span></p>
+      <p><span class="label">Date & Time of Report:</span> <span class="content">[Leave Blank]</span></p>
+    </div>
 
----
+    <div class="section">
+      <h3>Exam Details</h3>
+      <p><span class="label">Exam Type:</span> <span class="content">[Specify MRI Scan Type]</span></p>
+      <p><span class="label">Body Part Examined:</span> <span class="content">[Brain, Spine, Knee, etc.]</span></p>
+      <p><span class="label">Patient Positioning:</span> <span class="content">[Supine, Prone, etc.]</span></p>
+      <p><span class="label">Use of Contrast:</span> <span class="content">[Mention if contrast was administered]</span></p>
+      <p><span class="label">Slice Thickness:</span> <span class="content">[Mention details if provided]</span></p>
+      <p><span class="label">Anatomical Landmarks:</span> <span class="content">[Include relevant details]</span></p>
+      <p><span class="label">Deviations from Protocol:</span> <span class="content">[If applicable]</span></p>
+      <p><span class="label">Patient Preparation Notes:</span> <span class="content">[If applicable]</span></p>
+    </div>
 
+    <div class="section">
+      <h3>Clinical Indications</h3>
+      <p>
+        Clearly describe why the MRI was conducted. Mention patient symptoms that led to the MRI request. Incorporate relevant medical history and prior test results if applicable. State the purpose of the MRI scan (e.g., ruling out a specific condition, assessing an abnormality). If no contraindications exist, state that explicitly.
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>Imaging Findings</h3>
+      <p>
+        Provide a systematic description of normal and abnormal structures observed. Clearly describe any abnormalities, such as lesions, masses, edema, or herniation. Include measurements if applicable (e.g., tumor size, area of edema). State the condition of surrounding structures and whether they are affected. Mention any incidental findings detected during the scan.
+      </p>
+    </div>
+
+    <div class="section">
+      <h3>Impressions</h3>
+      <p>
+        Summarize the main diagnosis or differential considerations based on findings. If no abnormalities are found, explicitly state that the MRI is unremarkable. List possible differential diagnoses if necessary. Recommend further investigations (e.g., follow-up imaging, biopsy, lab tests) if needed. Advise clinical correlation with patient symptoms and history.
+      </p>
+    </div>
+    <div style="color: crimson;">
+      
+      Note : This is an AI generated report
+    </div>
+  </div>
+
+</body>
+</html>
