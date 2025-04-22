@@ -342,7 +342,7 @@ async def signin(data: SigninModel):
     
     return {"message": f"Login successful as {role}", "token": token, "role": role,"id":user_id}
 
-app.include_router(ai_router, prefix="/ai")
+app.include_router(ai_router, prefix="")
 app.include_router(yolo_router, prefix="/yolo")
 # -----------------------
 # Include the RAG routes
@@ -354,4 +354,4 @@ app.include_router(route_rag)
 # -----------------------
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Body
 from fastapi.responses import JSONResponse, FileResponse
 import nibabel as nib
 import numpy as np
@@ -17,6 +17,11 @@ router = APIRouter()
 load_dotenv()
 MODEL_PATH = os.getenv("MODEL_PATH")
 
+# Create base directory for patient data
+PATIENT_DATA_DIR = "./patient_data/mri_scans/user"  
+os.makedirs(PATIENT_DATA_DIR, exist_ok=True)
+
+# Custom metrics for model evaluation
 def dice_coef(y_true, y_pred, smooth=1.0):
     class_num = 4
     total_loss = 0
@@ -71,20 +76,28 @@ IMG_SIZE = 128
 VOLUME_SLICES = 155
 VOLUME_START_AT = 0
 
-def preprocess_image(nifti_image):
-    data = nifti_image.get_fdata()
-    X = np.zeros((VOLUME_SLICES, IMG_SIZE, IMG_SIZE, 2))
-    for j in range(VOLUME_SLICES):
-        X[j, :, :, 0] = cv2.resize(data[:, :, j + VOLUME_START_AT], (IMG_SIZE, IMG_SIZE))
-        X[j, :, :, 1] = cv2.resize(data[:, :, j + VOLUME_START_AT], (IMG_SIZE, IMG_SIZE))
-    return X / np.max(X)
+# Removed unused preprocess_image and predict functions
 
-def predict(image):
-    prediction = model.predict(image, verbose=1)
-    return prediction
+def predictByPath(file_t1ce, file_flair):
+    X = np.empty((VOLUME_SLICES, IMG_SIZE, IMG_SIZE, 2))
+    
+    vol_path = file_flair
+    flair = nib.load(f"../backend/patient_data/mri_scans/user/{file_flair}").get_fdata()
+    
+    vol_path = file_t1ce
+    ce = nib.load(f"../backend/patient_data/mri_scans/user/{file_t1ce}").get_fdata()
+    
+    for j in range(VOLUME_SLICES):
+        X[j,:,:,0] = cv2.resize(flair[:,:,j+VOLUME_START_AT], (IMG_SIZE,IMG_SIZE))
+        X[j,:,:,1] = cv2.resize(ce[:,:,j+VOLUME_START_AT], (IMG_SIZE,IMG_SIZE))
+    t1ce_path = os.path.join(PATIENT_DATA_DIR, "resize_t1ce.nii.gz")
+    flair_path = os.path.join(PATIENT_DATA_DIR, "resize_flair.nii.gz")
+    save_nifti(np.transpose(X[:,:,:,0], (1, 2, 0)), flair_path)
+    save_nifti(np.transpose(X[:,:,:,1], (1, 2, 0)), t1ce_path)
+    return model.predict(X/np.max(X), verbose=1)
 
 def save_nifti(data, file_path):
-    data = data.astype(np.uint8)
+    data = data.astype(np.float32)
     nifti_img = nib.Nifti1Image(data, np.eye(4))
     nib.save(nifti_img, file_path)
 
@@ -117,37 +130,70 @@ def extract_prediction_details(segmentation):
     }
     return insights
 
-@router.post("/predict/")
-async def predict_mri(file: UploadFile = File(...)):
+# Helper function to handle file uploads
+async def save_uploaded_file(file: UploadFile, file_type: str):
     if not file.filename.endswith(".nii.gz"):
-        raise HTTPException(status_code=400, detail="Only .nii.gz files are accepted")
+        raise HTTPException(status_code=400, detail=f"Only .nii.gz files are accepted for {file_type}")
     
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".nii.gz") as temp_file:
-        temp_file.write(await file.read())
-        temp_file_path = temp_file.name
+    try:
+        # Create patient directory structure
+        patient_dir = PATIENT_DATA_DIR
+        os.makedirs(patient_dir, exist_ok=True)
+        
+        # Save file
+        file_path = os.path.join(patient_dir, file.filename)
+        with open(file_path, "wb") as f:
+            f.write(await file.read())
+        
+        return JSONResponse(
+            content={"message": f"{file_type} file saved successfully at {file_path}"},
+            status_code=200
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error saving {file_type} file: {str(e)}")
 
-    nifti_image = nib.load(temp_file_path)
-    processed_image = preprocess_image(nifti_image)
-    prediction = predict(processed_image)
-    segmentation = np.argmax(prediction, axis=-1)
-    
-    output_file_path = "./VisionModel/report/output_prediction.nii.gz"
-    save_nifti(segmentation, output_file_path)
+@router.post("/api/mri/upload/t1ce")
+async def upload_t1ce_file(t1ce_file: UploadFile = File(...)):
+    return await save_uploaded_file(t1ce_file, "T1CE")
 
-    mri_details = extract_mri_details(nifti_image)
-    prediction_details = extract_prediction_details(segmentation)
+@router.post("/api/mri/upload/flair")
+async def upload_flair_file(flair_file: UploadFile = File(...)):
+    return await save_uploaded_file(flair_file, "FLAIR")
 
-    report = {
-        "mri_details": mri_details,
-        "prediction_details": prediction_details,
-        "segmentation_file": output_file_path
-    }
+@router.post("/api/mri/predict")
+async def predict_mri(t1ce_filename: str = Body(...), flair_filename: str = Body(...)):
+    try:
+        # Use the predictByPath function
+        prediction = predictByPath(t1ce_filename, flair_filename)
+        save_nifti(np.transpose(prediction[:,:,:,1], (1, 2, 0)), "./one.nii.gz")
+        save_nifti(np.transpose(prediction[:,:,:,2], (1, 2, 0)), "./two.nii.gz")
+        save_nifti(np.transpose(prediction[:,:,:,3], (1, 2, 0)), "./three.nii.gz")
+        segmentation = np.argmax(prediction, axis=-1)
+        
+        # Save segmentation output
+        output_path = os.path.join(PATIENT_DATA_DIR, "segmentation_output.nii.gz")
+        save_nifti(np.transpose(segmentation, (1, 2, 0)), output_path)
+        
+        # Load T1CE file for details
+        nifti_image = nib.load(f"../backend/patient_data/mri_scans/user/{t1ce_filename}")
+        mri_details = extract_mri_details(nifti_image)
+        prediction_details = extract_prediction_details(segmentation)
 
-    report_path = "./VisionModel/report/mri_report.json"
-    with open(report_path, "w") as json_file:
-        json.dump(report, json_file, indent=4)
+        report = {
+            "mri_details": mri_details,
+            "prediction_details": prediction_details,
+            "segmentation_file": output_path,
+            "t1ce_file": t1ce_filename,
+        }
 
-    return {
-        "report": FileResponse(path="../backend/VisionModel/report/mri_report.json", filename="../backend/VisionModel/report/mri_report.json", media_type="application/json"),
-        "segmentation_file": FileResponse(path="../backend/VisionModel/report/output_prediction.nii.gz", filename="../backend/VisionModel/report/output_prediction.nii.gz", media_type="application/octet-stream")
-    }
+        report_path = os.path.join(PATIENT_DATA_DIR, "mri_report.json")
+        with open(report_path, "w") as json_file:
+            json.dump(report, json_file, indent=4)
+
+        return {
+            "report": FileResponse(path=report_path, filename="mri_report.json", media_type="application/json"),
+            "segmentation_file": "segmentation_output.nii.gz",
+            "file_name": t1ce_filename,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during prediction: {str(e)}")
