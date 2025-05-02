@@ -92,7 +92,12 @@
       <p><span class="label">Gender:</span> <span class="content">[Patient Gender]</span></p>
       <p><span class="label">Patient ID:</span> <span class="content">[Unique ID]</span></p>
       <p><span class="label">Contact:</span> <span class="content">[Phone Number]</span></p>
-      <p><span class="label">Relevant Medical History:</span> <span class="content">[Mention if available]</span></p>
+      <div class="history">
+        <h3>Medical History</h3>
+        <table>
+        make table for medical history
+        </table>
+      </div>
       <p><span class="label">Emergency Contact:</span> <span class="content">[Mention if available]</span></p>
     </div>
 
@@ -144,3 +149,5 @@
 
 </body>
 </html>
+
+If any data is not available dont add that feild in that report

@@ -32,3 +32,5 @@ backend/VisionModel/report/*
 *.md
 *.pdf
 /paper
+
+backend/patient/*
